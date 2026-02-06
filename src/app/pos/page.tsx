@@ -1,50 +1,68 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useMemo } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ShoppingCart, Barcode, Trash2, CheckCircle2, Search, CreditCard, Banknote } from "lucide-react";
+import { ShoppingCart, Barcode, Trash2, CheckCircle2, CreditCard, Banknote, QrCode, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
+import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 interface CartItem {
-  token: string;
+  id: string;
   name: string;
   size: string;
   price: number;
   quantity: number;
+  barcode: string;
 }
 
 export default function POSPage() {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<"CARD" | "CASH" | "PIX">("CARD");
+  const [isProcessing, setIsProcessing] = useState(false);
+  
   const { toast } = useToast();
+  const { firestore } = useFirestore();
+  const { user } = useUser();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const mockProductDb = [
-    { name: "Camiseta Basic", size: "M", price: 49.90, token: "P-782-931-M" },
-    { name: "Camiseta Basic", size: "G", price: 49.90, token: "P-782-931-G" },
-    { name: "Calça Jeans Slim", size: "42", price: 299.00, token: "P-455-221-42" },
-    { name: "Jaqueta Couro", size: "P", price: 549.90, token: "P-112-984-P" },
-  ];
+  // Fetch real products from Firestore
+  const productsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, "products");
+  }, [firestore]);
 
-  const addToCart = (token: string) => {
-    const product = mockProductDb.find(p => p.token === token);
+  const { data: products, isLoading: isLoadingProducts } = useCollection(productsQuery);
+
+  const addToCart = (barcode: string) => {
+    const product = products?.find(p => p.barcode === barcode || p.id === barcode);
+    
     if (product) {
       setCart(prev => {
-        const existing = prev.find(item => item.token === token);
+        const existing = prev.find(item => item.id === product.id);
         if (existing) {
-          return prev.map(item => item.token === token ? { ...item, quantity: item.quantity + 1 } : item);
+          return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
         }
-        return [...prev, { ...product, quantity: 1 }];
+        return [...prev, { 
+          id: product.id, 
+          name: product.name, 
+          size: product.size, 
+          price: product.price, 
+          quantity: 1,
+          barcode: product.barcode
+        }];
       });
       setBarcodeInput("");
       toast({ title: "Produto adicionado", description: `${product.name} (${product.size})` });
     } else {
-      toast({ variant: "destructive", title: "Erro", description: "Código de barras não encontrado." });
+      toast({ variant: "destructive", title: "Erro", description: "Produto não encontrado." });
     }
   };
 
@@ -53,16 +71,64 @@ export default function POSPage() {
     if (barcodeInput) addToCart(barcodeInput);
   };
 
-  const removeItem = (token: string) => {
-    setCart(prev => prev.filter(item => item.token !== token));
+  const removeItem = (id: string) => {
+    setCart(prev => prev.filter(item => item.id !== id));
   };
 
   const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
-  const finalizeSale = () => {
-    if (cart.length === 0) return;
-    setCart([]);
-    toast({ title: "Venda Finalizada", description: `Total de R$ ${total.toFixed(2)} registrado com sucesso.` });
+  const finalizeSale = async () => {
+    if (cart.length === 0 || !user || !firestore) return;
+
+    setIsProcessing(true);
+    
+    try {
+      const saleId = crypto.randomUUID();
+      const salesRef = collection(firestore, "users", user.uid, "sales");
+      const saleDocRef = doc(salesRef, saleId);
+
+      const saleData = {
+        id: saleId,
+        dateTime: new Date().toISOString(),
+        createdAt: serverTimestamp(),
+        totalAmount: total,
+        userId: user.uid,
+        paymentMethod,
+        saleItems: cart.map(item => item.id)
+      };
+
+      // In a real app we'd use a batch to save items too
+      const batch = writeBatch(firestore);
+      batch.set(saleDocRef, saleData);
+
+      cart.forEach(item => {
+        const itemRef = doc(collection(saleDocRef, "saleItems"));
+        batch.set(itemRef, {
+          id: itemRef.id,
+          saleId: saleId,
+          productId: item.id,
+          quantity: item.quantity,
+          price: item.price
+        });
+      });
+
+      await batch.commit();
+
+      setCart([]);
+      toast({ 
+        title: "Venda Finalizada", 
+        description: `Total de R$ ${total.toFixed(2)} registrado via ${paymentMethod}.` 
+      });
+    } catch (error) {
+      console.error("Erro ao finalizar venda:", error);
+      toast({ 
+        variant: "destructive", 
+        title: "Erro ao processar", 
+        description: "Não foi possível registrar a venda no sistema." 
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -85,27 +151,33 @@ export default function POSPage() {
                     value={barcodeInput}
                     onChange={(e) => setBarcodeInput(e.target.value)}
                     className="text-lg h-12"
+                    disabled={isLoadingProducts}
                   />
                   <div className="absolute right-3 top-3.5 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
                     ENTER para adicionar
                   </div>
                 </div>
-                <Button type="submit" className="h-12 px-8">Adicionar</Button>
+                <Button type="submit" className="h-12 px-8" disabled={isLoadingProducts}>
+                  {isLoadingProducts ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar"}
+                </Button>
               </form>
               
               <div className="mt-4 flex flex-wrap gap-2">
-                <p className="text-xs text-muted-foreground w-full mb-1">Dica: clique para testar</p>
-                {mockProductDb.map(p => (
+                <p className="text-xs text-muted-foreground w-full mb-1">Sugestões rápidas:</p>
+                {products?.slice(0, 4).map(p => (
                   <Button 
-                    key={p.token} 
+                    key={p.id} 
                     variant="outline" 
                     size="sm" 
                     className="text-xs border-dashed"
-                    onClick={() => addToCart(p.token)}
+                    onClick={() => addToCart(p.barcode || p.id)}
                   >
                     {p.name} ({p.size})
                   </Button>
                 ))}
+                {products?.length === 0 && !isLoadingProducts && (
+                  <p className="text-xs text-destructive italic">Nenhum produto cadastrado no estoque.</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -136,10 +208,10 @@ export default function POSPage() {
                   </TableHeader>
                   <TableBody>
                     {cart.map((item) => (
-                      <TableRow key={item.token}>
+                      <TableRow key={item.id}>
                         <TableCell>
                           <div className="font-medium">{item.name}</div>
-                          <div className="text-xs text-muted-foreground">Tam: {item.size} • {item.token}</div>
+                          <div className="text-xs text-muted-foreground">Tam: {item.size} • {item.barcode}</div>
                         </TableCell>
                         <TableCell className="font-bold">{item.quantity}x</TableCell>
                         <TableCell>R$ {item.price.toFixed(2)}</TableCell>
@@ -149,7 +221,7 @@ export default function POSPage() {
                             variant="ghost" 
                             size="icon" 
                             className="text-destructive h-8 w-8"
-                            onClick={() => removeItem(item.token)}
+                            onClick={() => removeItem(item.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -166,7 +238,7 @@ export default function POSPage() {
         <div className="space-y-6">
           <Card className="border-none shadow-lg bg-primary text-white">
             <CardHeader>
-              <CardTitle className="font-headline text-center">Resumo do Pagamento</CardTitle>
+              <CardTitle className="font-headline text-center text-xl">Resumo do Pagamento</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between text-lg opacity-80">
@@ -182,38 +254,57 @@ export default function POSPage() {
                 <span>R$ {total.toFixed(2)}</span>
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col gap-3">
+            <CardFooter className="flex flex-col gap-4">
+              <div className="grid grid-cols-3 gap-2 w-full">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setPaymentMethod("CARD")}
+                  className={`bg-transparent border-white/40 text-white hover:bg-white/20 flex flex-col h-16 gap-1 ${paymentMethod === "CARD" ? "bg-white/20 border-white ring-2 ring-white/50" : ""}`}
+                >
+                  <CreditCard className="h-5 w-5" />
+                  <span className="text-[10px] font-bold">Cartão</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setPaymentMethod("CASH")}
+                  className={`bg-transparent border-white/40 text-white hover:bg-white/20 flex flex-col h-16 gap-1 ${paymentMethod === "CASH" ? "bg-white/20 border-white ring-2 ring-white/50" : ""}`}
+                >
+                  <Banknote className="h-5 w-5" />
+                  <span className="text-[10px] font-bold">Dinheiro</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setPaymentMethod("PIX")}
+                  className={`bg-transparent border-white/40 text-white hover:bg-white/20 flex flex-col h-16 gap-1 ${paymentMethod === "PIX" ? "bg-white/20 border-white ring-2 ring-white/50" : ""}`}
+                >
+                  <QrCode className="h-5 w-5" />
+                  <span className="text-[10px] font-bold">Pix</span>
+                </Button>
+              </div>
+
               <Button 
                 onClick={finalizeSale}
                 className="w-full bg-white text-primary hover:bg-white/90 text-lg font-bold h-14"
-                disabled={cart.length === 0}
+                disabled={cart.length === 0 || isProcessing}
               >
-                <CheckCircle2 className="mr-2 h-6 w-6" />
+                {isProcessing ? (
+                  <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="mr-2 h-6 w-6" />
+                )}
                 FINALIZAR VENDA
               </Button>
-              <div className="grid grid-cols-2 gap-2 w-full">
-                <Button variant="outline" className="bg-transparent border-white/40 text-white hover:bg-white/10 gap-2">
-                  <CreditCard className="h-4 w-4" /> Cartão
-                </Button>
-                <Button variant="outline" className="bg-transparent border-white/40 text-white hover:bg-white/10 gap-2">
-                  <Banknote className="h-4 w-4" /> Dinheiro
-                </Button>
-              </div>
             </CardFooter>
           </Card>
           
           <Card className="border-none shadow-sm">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Última Venda</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Dica do Operador</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-lg">R$ 149,90</p>
-                  <p className="text-xs text-muted-foreground">Há 12 minutos • #9822</p>
-                </div>
-                <Button variant="link" className="text-primary text-xs p-0">Reimprimir Cupom</Button>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Sempre confira o tamanho da peça no sistema antes de finalizar a venda para garantir a integridade do estoque.
+              </p>
             </CardContent>
           </Card>
         </div>
