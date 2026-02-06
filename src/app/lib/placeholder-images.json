@@ -1,0 +1,23 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "fashion-1",
+      "description": "Premium clothing display",
+      "imageUrl": "https://picsum.photos/seed/fashion1/800/600",
+      "imageHint": "fashion clothing"
+    },
+    {
+      "id": "fashion-2",
+      "description": "Minimalist storefront",
+      "imageUrl": "https://picsum.photos/seed/fashion2/800/600",
+      "imageHint": "boutique interior"
+    },
+    {
+      "id": "fashion-3",
+      "description": "Clothing rack",
+      "imageUrl": "https://picsum.photos/seed/fashion3/800/600",
+      "imageHint": "clothing rack"
+    }
+  ]
+}
