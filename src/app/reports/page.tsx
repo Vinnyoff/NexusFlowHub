@@ -6,9 +6,17 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp, AlertCircle, ShoppingCart, Loader2 } from "lucide-react";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from "recharts";
 import { generateRestockSuggestions } from "@/ai/flows/ai-restock-suggestions";
+import { Badge } from "@/components/ui/badge";
+
+const chartConfig = {
+  total: {
+    label: "Faturamento",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig;
 
 export default function ReportsPage() {
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -66,16 +74,25 @@ export default function ReportsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-[300px] w-full">
+                <ChartContainer config={chartConfig} className="h-full w-full">
                   <BarChart data={salesData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted))" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 12}} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 12}} />
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 12}} 
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 12}} 
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
                   </BarChart>
-                </ResponsiveContainer>
+                </ChartContainer>
               </div>
             </CardContent>
           </Card>
