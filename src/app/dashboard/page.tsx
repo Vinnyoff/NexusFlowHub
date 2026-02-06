@@ -12,17 +12,18 @@ import {
   PieChart, 
   History 
 } from "lucide-react";
+import Link from "next/link";
 
 export default function Dashboard() {
   return (
     <AppLayout>
-      <div className="space-y-8">
+      <div className="space-y-8 max-w-7xl mx-auto">
         <div>
-          <h1 className="text-4xl font-headline font-bold text-primary mb-2">Bem-vindo à FashionFlow</h1>
-          <p className="text-muted-foreground">Aqui está o resumo do que está acontecendo hoje.</p>
+          <h1 className="text-4xl font-headline font-bold text-primary mb-2 tracking-tight">Painel de Controle</h1>
+          <p className="text-muted-foreground">Resumo das atividades da FashionFlow hoje.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
             title="Vendas Hoje" 
             value="R$ 4.250,00" 
@@ -32,47 +33,47 @@ export default function Dashboard() {
             bgColor="bg-emerald-100"
           />
           <StatCard 
-            title="Pedidos Realizados" 
+            title="Pedidos" 
             value="24" 
             icon={ShoppingBag} 
-            trend="Média de R$ 177,00 por venda"
+            trend="Ticket Médio: R$ 177,00"
             color="text-primary"
             bgColor="bg-primary/10"
           />
           <StatCard 
-            title="Total de Produtos" 
+            title="Estoque" 
             value="1.248" 
             icon={Package} 
-            trend="5 variações cadastradas hoje"
+            trend="5 novos itens hoje"
             color="text-blue-600"
             bgColor="bg-blue-100"
           />
           <StatCard 
-            title="Estoque Baixo" 
-            value="12 itens" 
+            title="Alertas" 
+            value="12" 
             icon={AlertTriangle} 
-            trend="Atenção necessária"
+            trend="Itens com baixo estoque"
             color="text-amber-600"
             bgColor="bg-amber-100"
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="border-none shadow-sm">
-            <CardHeader>
-              <CardTitle className="font-headline">Vendas Recentes</CardTitle>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
+            <CardHeader className="bg-muted/30">
+              <CardTitle className="font-headline text-xl">Vendas Recentes</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="p-0">
+              <div className="divide-y divide-border">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                        V
+                  <div key={i} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold">
+                        #{1024 + i}
                       </div>
                       <div>
-                        <p className="font-medium">Venda #{1024 + i}</p>
-                        <p className="text-xs text-muted-foreground">Há {i * 10} minutos • Caixa 01</p>
+                        <p className="font-semibold text-sm">Venda Online</p>
+                        <p className="text-xs text-muted-foreground">Há {i * 10} minutos • Pix</p>
                       </div>
                     </div>
                     <span className="font-bold text-primary">R$ {i * 89},90</span>
@@ -84,13 +85,13 @@ export default function Dashboard() {
 
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle className="font-headline">Ações Rápidas</CardTitle>
+              <CardTitle className="font-headline text-xl text-center">Acesso Rápido</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-              <QuickAction icon={ShoppingCart} label="Novo Pedido" href="/pos" />
-              <QuickAction icon={Package} label="Cadastrar Produto" href="/products" />
-              <QuickAction icon={PieChart} label="Ver Relatórios" href="/reports" />
-              <QuickAction icon={History} label="Histórico de Vendas" href="/history" />
+            <CardContent className="grid grid-cols-1 gap-3">
+              <QuickAction icon={ShoppingCart} label="Novo Pedido (PDV)" href="/pos" />
+              <QuickAction icon={Package} label="Gerenciar Estoque" href="/products" />
+              <QuickAction icon={PieChart} label="Relatórios IA" href="/reports" />
+              <QuickAction icon={History} label="Histórico Completo" href="/history" />
             </CardContent>
           </Card>
         </div>
@@ -101,7 +102,7 @@ export default function Dashboard() {
 
 function StatCard({ title, value, icon: Icon, trend, color, bgColor }: any) {
   return (
-    <Card className="border-none shadow-sm overflow-hidden">
+    <Card className="border-none shadow-sm overflow-hidden transition-all hover:shadow-md">
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div className={`${bgColor} ${color} p-3 rounded-xl`}>
@@ -109,8 +110,8 @@ function StatCard({ title, value, icon: Icon, trend, color, bgColor }: any) {
           </div>
         </div>
         <div>
-          <p className="text-sm text-muted-foreground mb-1 font-medium">{title}</p>
-          <h3 className="text-2xl font-bold mb-1">{value}</h3>
+          <p className="text-xs text-muted-foreground mb-1 font-bold uppercase tracking-wider">{title}</p>
+          <h3 className="text-2xl font-bold mb-1 tracking-tight">{value}</h3>
           <p className="text-xs font-medium text-muted-foreground">{trend}</p>
         </div>
       </CardContent>
@@ -120,9 +121,9 @@ function StatCard({ title, value, icon: Icon, trend, color, bgColor }: any) {
 
 function QuickAction({ icon: Icon, label, href }: any) {
   return (
-    <a href={href} className="flex flex-col items-center justify-center p-6 border rounded-2xl hover:bg-primary/5 hover:border-primary transition-all group text-center">
-      <Icon className="h-8 w-8 mb-3 text-muted-foreground group-hover:text-primary transition-colors" />
-      <span className="text-sm font-medium text-muted-foreground group-hover:text-primary">{label}</span>
-    </a>
+    <Link href={href} className="flex items-center gap-3 p-4 border rounded-xl hover:bg-primary hover:text-white hover:border-primary transition-all group">
+      <Icon className="h-5 w-5 text-primary group-hover:text-white transition-colors" />
+      <span className="text-sm font-bold">{label}</span>
+    </Link>
   );
 }

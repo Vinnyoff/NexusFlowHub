@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from "@/app/lib/auth-store";
 
 function AppSidebar() {
   const pathname = usePathname();
-  const { role, logout } = useAuth();
+  const { role } = useAuth();
   const isAdmin = role === "ADM";
 
   const menuItems = [
@@ -23,21 +23,21 @@ function AppSidebar() {
   const visibleItems = menuItems.filter(item => item.roles.includes(role || "CASHIER"));
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
+    <Sidebar collapsible="icon" className="border-r border-border bg-sidebar shadow-xl">
       <SidebarHeader className="p-4 flex items-center gap-3 overflow-hidden">
-        <div className="bg-primary p-2 rounded-xl text-white shrink-0">
+        <div className="bg-primary p-2 rounded-xl text-white shrink-0 shadow-lg shadow-primary/20">
           <Shirt className="h-6 w-6" />
         </div>
-        <span className="font-headline font-bold text-xl text-primary truncate group-data-[collapsible=icon]:hidden">FashionFlow</span>
+        <span className="font-headline font-bold text-xl text-primary truncate group-data-[collapsible=icon]:hidden tracking-tight">FashionFlow</span>
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
           {visibleItems.map((item) => (
             <SidebarMenuItem key={item.url}>
-              <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
+              <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title} className="rounded-xl h-11">
                 <Link href={item.url} className="flex items-center gap-3">
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.title}</span>
+                  <item.icon className="h-5 w-5" />
+                  <span className="font-semibold">{item.title}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -46,23 +46,23 @@ function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="p-4 border-t border-border mt-auto overflow-hidden">
         <div className="flex items-center gap-3 mb-4 px-2 group-data-[collapsible=icon]:px-0">
-          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-            <User className="h-4 w-4 text-muted-foreground" />
+          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+            <User className="h-5 w-5 text-primary" />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-semibold truncate max-w-[120px]">
+            <span className="text-sm font-bold truncate max-w-[120px]">
               {isAdmin ? "Administrador" : "Caixa 01"}
             </span>
-            <span className="text-xs text-muted-foreground">{role}</span>
+            <span className="text-[10px] uppercase font-bold text-muted-foreground opacity-70 tracking-tighter">{role}</span>
           </div>
         </div>
         <SidebarMenuButton 
           onClick={() => window.location.href = "/"} 
-          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl h-11"
           tooltip="Sair"
         >
-          <LogOut className="h-4 w-4" />
-          <span className="group-data-[collapsible=icon]:hidden">Sair</span>
+          <LogOut className="h-5 w-5" />
+          <span className="font-bold group-data-[collapsible=icon]:hidden">Sair</span>
         </SidebarMenuButton>
       </SidebarFooter>
       <SidebarRail />
@@ -76,13 +76,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset className="bg-background">
-          <header className="flex h-16 items-center border-b px-4 gap-4 sticky top-0 bg-background/80 backdrop-blur-md z-10">
+          <header className="flex h-16 items-center border-b px-6 gap-4 sticky top-0 bg-background/60 backdrop-blur-md z-10">
             <SidebarTrigger />
             <div className="flex-1">
-              <h2 className="font-headline font-semibold text-lg">FashionFlow Management</h2>
+              <h2 className="font-headline font-bold text-lg text-primary/80">FashionFlow Studio</h2>
             </div>
           </header>
-          <main className="flex-1 p-6 overflow-y-auto">
+          <main className="flex-1 p-6 md:p-8 overflow-y-auto">
             {children}
           </main>
         </SidebarInset>
