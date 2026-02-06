@@ -1,9 +1,17 @@
-
 "use client";
 
 import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShoppingBag, TrendingUp, Package, AlertTriangle, Users } from "lucide-react";
+import { 
+  ShoppingBag, 
+  TrendingUp, 
+  Package, 
+  AlertTriangle, 
+  Users, 
+  ShoppingCart, 
+  PieChart, 
+  History 
+} from "lucide-react";
 import { useAuth } from "@/app/lib/auth-store";
 
 export default function Dashboard() {
