@@ -1,0 +1,244 @@
+{
+  "entities": {
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product in the store.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the product.",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product."
+        },
+        "brand": {
+          "type": "string",
+          "description": "Brand of the product."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model of the product."
+        },
+        "size": {
+          "type": "string",
+          "description": "Size of the product (e.g., P, M, G, GG)."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the product."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity of the product in stock."
+        },
+        "barcode": {
+          "type": "string",
+          "description": "The barcode for the product."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "brand",
+        "model",
+        "size",
+        "price",
+        "quantity",
+        "barcode"
+      ]
+    },
+    "Sale": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Sale",
+      "type": "object",
+      "description": "Represents a sale transaction.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the sale.",
+          "format": "uuid"
+        },
+        "dateTime": {
+          "type": "string",
+          "description": "Date and time of the sale.",
+          "format": "date-time"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Total amount of the sale."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Sale)"
+        },
+        "saleItems": {
+          "type": "array",
+          "description": "References to SaleItem. (Relationship: Sale 1:N SaleItem)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "dateTime",
+        "totalAmount",
+        "userId",
+        "saleItems"
+      ]
+    },
+    "SaleItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SaleItem",
+      "type": "object",
+      "description": "Represents an individual item within a sale.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the sale item.",
+          "format": "uuid"
+        },
+        "saleId": {
+          "type": "string",
+          "description": "Reference to Sale. (Relationship: Sale 1:N SaleItem)"
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product. (Relationship: Product 1:N SaleItem)"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity of the product sold in this sale item."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the product at the time of the sale."
+        }
+      },
+      "required": [
+        "id",
+        "saleId",
+        "productId",
+        "quantity",
+        "price"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the system (Admin or Cashier).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user.",
+          "format": "uuid"
+        },
+        "username": {
+          "type": "string",
+          "description": "Username of the user."
+        },
+        "role": {
+          "type": "string",
+          "description": "Role of the user (Admin or Cashier)."
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "role"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores product information. Each product is treated as a unique item regarding of its size, model or brand. All are stored in a flat collection with no authorization context.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "Unique identifier for the product (UUID)."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/sales/{saleId}",
+        "definition": {
+          "entityName": "Sale",
+          "schema": {
+            "$ref": "#/backend/entities/Sale"
+          },
+          "description": "Stores sale transactions for each user. Path-based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            },
+            {
+              "name": "saleId",
+              "description": "Unique identifier for the sale."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/sales/{saleId}/saleItems/{saleItemId}",
+        "definition": {
+          "entityName": "SaleItem",
+          "schema": {
+            "$ref": "#/backend/entities/SaleItem"
+          },
+          "description": "Stores individual items within a sale, nested under the sale document. Path-based ownership continues.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            },
+            {
+              "name": "saleId",
+              "description": "Unique identifier for the sale."
+            },
+            {
+              "name": "saleItemId",
+              "description": "Unique identifier for the sale item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Collection to indicate admin roles based on document existence. If a document exists for a user ID, the user is an admin.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the features described in the prompt, focusing on a clothing store's product and sales management.  The structure emphasizes security, scalability, and maintainability following the core design principles.  Authorization Independence is achieved through denormalization of user roles where applicable. Structural Segregation ensures that collections contain documents with similar security postures, avoiding complex rule logic. Access Modeling standardizes ownership and collaborative data patterns. This design facilitates straightforward security rules and efficient list operations, addressing QAPs.\n\nProducts are stored in a flat `products` collection.  Sales are stored in user-scoped collections (`/users/{userId}/sales/{saleId}`).  SaleItems are nested under sales, continuing the hierarchical path (`/users/{userId}/sales/{saleId}/saleItems/{saleItemId}`). This structure allows for straightforward querying of sales history and product details. User roles (Admin/Cashier) are determined by the existence of a document in a specific role collection (`roles_admin/{userId}`). This avoids reliance on custom claims and simplifies role-based access control, following the DBAC (Database-Based Access Control) principle. No custom claims are necessary.  This existence-based approach for global roles simplifies security rules and avoids data duplication.\n\nQAPs (Rules are not Filters) are supported through structural segregation and path-based ownership. Listing products is inherently safe as there are no specific role-based filters required. Listing sales is restricted to the specific user's sales.  Sales data integrity is maintained via transactions/batches, ensuring consistency between sales and sale items."
+  }
+}

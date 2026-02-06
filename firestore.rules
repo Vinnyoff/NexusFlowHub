@@ -1,0 +1,119 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * CORE SECURITY PHILOSOPHY:
+     * This application implements a strict User-Ownership model for transactional data (Sales) 
+     * and a Database-Based Access Control (DBAC) model for administrative roles.
+     *
+     * DATA STRUCTURE:
+     * - /products: Publicly readable inventory, restricted writes.
+     * - /users/{userId}/sales: Private user-specific transaction history.
+     * - /roles_admin: A registry for identifying users with administrative privileges.
+     *
+     * KEY SECURITY DECISIONS:
+     * 1. Path-Based Authorization: User data is nested under their UID to simplify rules and 
+     *    enforce isolation at the path level.
+     * 2. DBAC Roles: Administrative status is determined by the existence of a document 
+     *    in the /roles_admin collection.
+     * 3. Public Inventory: Products are readable by anyone to support storefront browsing, 
+     *    even for unauthenticated users.
+     * 4. Relational Integrity: On creation, rules enforce that data fields (like userId) 
+     *    match the authenticated user and the path structure.
+     */
+
+    // --- Helper Functions ---
+
+    /** Checks if the requester is authenticated. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** Checks if the authenticated user matches the provided userId. */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** Checks if the document exists and the requester is the owner. Used for updates/deletes. */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    /** 
+     * Checks if the requester has an Admin role.
+     * Relies on the existence of a document in the 'roles_admin' collection.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Rules for the Product inventory. Publicly readable, writeable only by Admins.
+     * @path /products/{productId}
+     * @allow (get) Anyone can view product details.
+     * @deny (create) Non-admin user attempts to add a product.
+     * @principle Public read with role-restricted writes.
+     */
+    match /products/{productId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Rules for Sales transactions. Users can only access and manage their own sales.
+     * @path /users/{userId}/sales/{saleId}
+     * @allow (create) User 'abc' creates a sale under /users/abc/sales/123 where userId field is 'abc'.
+     * @deny (list) User 'abc' attempts to list sales for user 'xyz'.
+     * @principle Path-based ownership and relational field validation.
+     */
+    match /users/{userId}/sales/{saleId} {
+      allow get, list: if isOwner(userId);
+      
+      allow create: if isOwner(userId) 
+        && request.resource.data.userId == userId;
+      
+      allow update: if isExistingOwner(userId) 
+        && request.resource.data.userId == resource.data.userId;
+      
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Rules for Sale Items nested within a specific sale.
+       * @path /users/{userId}/sales/{saleId}/saleItems/{saleItemId}
+       * @allow (get) Owner of the parent sale views an item in that sale.
+       * @deny (update) User attempts to change the saleId link of an existing item.
+       * @principle Hierarchical ownership and immutable relational links.
+       */
+      match /saleItems/{saleItemId} {
+        allow get, list: if isOwner(userId);
+        
+        allow create: if isOwner(userId) 
+          && request.resource.data.saleId == saleId;
+        
+        allow update: if isExistingOwner(userId) 
+          && request.resource.data.saleId == resource.data.saleId;
+        
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description Rules for administrative role assignments.
+     * @path /roles_admin/{userId}
+     * @allow (get) Any signed-in user checks if they (or others) are admins.
+     * @deny (create) A user attempts to make themselves an admin via the client.
+     * @principle Database-Based Access Control (DBAC).
+     */
+    match /roles_admin/{userId} {
+      // Users can check roles, but listing all admins is restricted to admins
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      
+      // Role management is handled outside the standard client flow (e.g., Admin SDK/Console)
+      allow create, update, delete: if false;
+    }
+  }
+}
