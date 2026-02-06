@@ -12,10 +12,10 @@ function AppSidebar() {
   const isAdmin = role === "ADM";
 
   const menuItems = [
-    { title: "Dashboard", icon: LayoutDashboard, url: "/dashboard", roles: ["ADM", "CASHIER"] },
-    { title: "Caixa / PDV", icon: ShoppingCart, url: "/pos", roles: ["ADM", "CASHIER"] },
-    { title: "Produtos", icon: Package, url: "/products", roles: ["ADM", "CASHIER"] },
-    { title: "Histórico", icon: History, url: "/history", roles: ["ADM", "CASHIER"] },
+    { title: "Painel", icon: LayoutDashboard, url: "/dashboard", roles: ["ADM", "CASHIER"] },
+    { title: "Caixa", icon: ShoppingCart, url: "/pos", roles: ["ADM", "CASHIER"] },
+    { title: "Estoque", icon: Package, url: "/products", roles: ["ADM", "CASHIER"] },
+    { title: "Vendas", icon: History, url: "/history", roles: ["ADM", "CASHIER"] },
     { title: "Relatórios", icon: PieChart, url: "/reports", roles: ["ADM"] },
   ];
 
@@ -77,11 +77,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="bg-background">
-        <header className="flex h-16 items-center border-b px-6 gap-4 sticky top-0 bg-background/60 backdrop-blur-md z-10">
+        <header className="flex h-14 items-center px-6 gap-4 sticky top-0 bg-background/60 backdrop-blur-md z-10">
           <SidebarTrigger />
-          <div className="flex-1">
-            <h2 className="font-headline font-bold text-lg text-primary/80">FashionFlow Studio</h2>
-          </div>
+          <div className="flex-1" />
         </header>
         <main className="flex-1 p-6 md:p-8 overflow-y-auto">
           {children}

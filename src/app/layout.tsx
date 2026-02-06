@@ -5,8 +5,8 @@ import { AuthProvider } from "./lib/auth-store";
 import { FirebaseClientProvider } from "@/firebase";
 
 export const metadata: Metadata = {
-  title: 'FashionFlow - Clothing Management System',
-  description: 'A modern, intuitive product and sales control system for fashion boutiques.',
+  title: 'FashionFlow - Sistema de Gestão de Moda',
+  description: 'Sistema moderno e intuitivo de controle de produtos e vendas para boutiques de moda.',
 };
 
 export default function RootLayout({
@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
