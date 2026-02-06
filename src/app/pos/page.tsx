@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ShoppingCart, Barcode, Trash2, CheckCircle2, CreditCard, Banknote, QrCode, Loader2 } from "lucide-react";
+import { ShoppingCart, Barcode, Trash2, CheckCircle2, CreditCard, Banknote, QrCode, Loader2, Plus, Minus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
-import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 interface CartItem {
   id: string;
@@ -66,6 +65,16 @@ export default function POSPage() {
     }
   };
 
+  const updateQuantity = (id: string, delta: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.id === id) {
+        const newQty = Math.max(1, item.quantity + delta);
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    }));
+  };
+
   const handleBarcodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (barcodeInput) addToCart(barcodeInput);
@@ -97,7 +106,6 @@ export default function POSPage() {
         saleItems: cart.map(item => item.id)
       };
 
-      // In a real app we'd use a batch to save items too
       const batch = writeBatch(firestore);
       batch.set(saleDocRef, saleData);
 
@@ -175,9 +183,6 @@ export default function POSPage() {
                     {p.name} ({p.size})
                   </Button>
                 ))}
-                {products?.length === 0 && !isLoadingProducts && (
-                  <p className="text-xs text-destructive italic">Nenhum produto cadastrado no estoque.</p>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -213,7 +218,27 @@ export default function POSPage() {
                           <div className="font-medium">{item.name}</div>
                           <div className="text-xs text-muted-foreground">Tam: {item.size} • {item.barcode}</div>
                         </TableCell>
-                        <TableCell className="font-bold">{item.quantity}x</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              className="h-8 w-8 rounded-full"
+                              onClick={() => updateQuantity(item.id, -1)}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="font-bold min-w-[20px] text-center">{item.quantity}</span>
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              className="h-8 w-8 rounded-full"
+                              onClick={() => updateQuantity(item.id, 1)}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
                         <TableCell>R$ {item.price.toFixed(2)}</TableCell>
                         <TableCell className="font-bold">R$ {(item.price * item.quantity).toFixed(2)}</TableCell>
                         <TableCell className="text-right">
@@ -295,17 +320,6 @@ export default function POSPage() {
                 FINALIZAR VENDA
               </Button>
             </CardFooter>
-          </Card>
-          
-          <Card className="border-none shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground uppercase">Dica do Operador</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">
-                Sempre confira o tamanho da peça no sistema antes de finalizar a venda para garantir a integridade do estoque.
-              </p>
-            </CardContent>
           </Card>
         </div>
       </div>
