@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppLayout } from "@/components/layout/app-layout";
@@ -7,12 +8,10 @@ import {
   TrendingUp, 
   Package, 
   AlertTriangle, 
-  Users, 
   ShoppingCart, 
   PieChart, 
   History 
 } from "lucide-react";
-import { useAuth } from "@/app/lib/auth-store";
 
 export default function Dashboard() {
   return (
@@ -121,7 +120,7 @@ function StatCard({ title, value, icon: Icon, trend, color, bgColor }: any) {
 
 function QuickAction({ icon: Icon, label, href }: any) {
   return (
-    <a href={href} className="flex flex-col items-center justify-center p-6 border rounded-2xl hover:bg-primary/5 hover:border-primary transition-all group">
+    <a href={href} className="flex flex-col items-center justify-center p-6 border rounded-2xl hover:bg-primary/5 hover:border-primary transition-all group text-center">
       <Icon className="h-8 w-8 mb-3 text-muted-foreground group-hover:text-primary transition-colors" />
       <span className="text-sm font-medium text-muted-foreground group-hover:text-primary">{label}</span>
     </a>

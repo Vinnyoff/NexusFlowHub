@@ -1,7 +1,7 @@
 
 "use client";
 
-import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset, SidebarRail } from "@/components/ui/sidebar";
 import { Shirt, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -23,12 +23,12 @@ function AppSidebar() {
   const visibleItems = menuItems.filter(item => item.roles.includes(role || "CASHIER"));
 
   return (
-    <Sidebar className="border-r border-border">
-      <SidebarHeader className="p-4 flex items-center gap-3">
-        <div className="bg-primary p-2 rounded-xl text-white">
+    <Sidebar collapsible="icon" className="border-r border-border">
+      <SidebarHeader className="p-4 flex items-center gap-3 overflow-hidden">
+        <div className="bg-primary p-2 rounded-xl text-white shrink-0">
           <Shirt className="h-6 w-6" />
         </div>
-        <span className="font-headline font-bold text-xl text-primary">FashionFlow</span>
+        <span className="font-headline font-bold text-xl text-primary truncate group-data-[collapsible=icon]:hidden">FashionFlow</span>
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
@@ -44,23 +44,28 @@ function AppSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t border-border mt-auto">
-        <div className="flex items-center gap-3 mb-4 px-2">
-          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+      <SidebarFooter className="p-4 border-t border-border mt-auto overflow-hidden">
+        <div className="flex items-center gap-3 mb-4 px-2 group-data-[collapsible=icon]:px-0">
+          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
             <User className="h-4 w-4 text-muted-foreground" />
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-semibold truncate max-w-[120px]">
               {isAdmin ? "Administrador" : "Caixa 01"}
             </span>
             <span className="text-xs text-muted-foreground">{role}</span>
           </div>
         </div>
-        <SidebarMenuButton onClick={() => window.location.href = "/"} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+        <SidebarMenuButton 
+          onClick={() => window.location.href = "/"} 
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          tooltip="Sair"
+        >
           <LogOut className="h-4 w-4" />
-          <span>Sair</span>
+          <span className="group-data-[collapsible=icon]:hidden">Sair</span>
         </SidebarMenuButton>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }
