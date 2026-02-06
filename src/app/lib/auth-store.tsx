@@ -24,14 +24,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
+    // For prototype simplicity, we also check localStorage if no real Firebase user
+    const savedUser = localStorage.getItem("ff_mock_user");
+    if (savedUser) {
+      const u = JSON.parse(savedUser);
       setUser(u);
-      // Simulating role fetching from custom claims or DB
-      // For this demo, let's assume 'admin@fashionflow.com' is ADM
+      setRole(u.email === "admin@fashionflow.com" ? "ADM" : "CASHIER");
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
       if (u) {
+        setUser(u);
         setRole(u.email === "admin@fashionflow.com" ? "ADM" : "CASHIER");
-      } else {
-        setRole(null);
       }
       setLoading(false);
     });
@@ -39,12 +43,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, pass: string) => {
-    // Basic mock login for the prototype if credentials aren't set
-    // In a real app, use signInWithEmailAndPassword(auth, email, pass)
-    console.log("Logging in...", email);
+    // Prototype Mock Login
+    setLoading(true);
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        const mockUser = { email, uid: "mock-uid-" + Date.now() } as User;
+        setUser(mockUser);
+        const newRole = email === "admin@fashionflow.com" ? "ADM" : "CASHIER";
+        setRole(newRole);
+        localStorage.setItem("ff_mock_user", JSON.stringify(mockUser));
+        setLoading(false);
+        resolve();
+      }, 800);
+    });
   };
 
   const logout = async () => {
+    localStorage.removeItem("ff_mock_user");
+    setUser(null);
+    setRole(null);
     await auth.signOut();
   };
 

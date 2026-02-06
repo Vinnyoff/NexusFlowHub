@@ -13,14 +13,17 @@ import {
   History 
 } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/app/lib/auth-store";
 
 export default function Dashboard() {
+  const { isAdmin } = useAuth();
+
   return (
     <AppLayout>
       <div className="space-y-8 max-w-7xl mx-auto">
         <div>
           <h1 className="text-4xl font-headline font-bold text-primary mb-2 tracking-tight">Painel de Controle</h1>
-          <p className="text-muted-foreground">Resumo das atividades da FashionFlow hoje.</p>
+          <p className="text-muted-foreground">Bem-vindo à gestão inteligente da sua boutique.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -90,7 +93,7 @@ export default function Dashboard() {
             <CardContent className="grid grid-cols-1 gap-3">
               <QuickAction icon={ShoppingCart} label="Novo Pedido (PDV)" href="/pos" />
               <QuickAction icon={Package} label="Gerenciar Estoque" href="/products" />
-              <QuickAction icon={PieChart} label="Relatórios IA" href="/reports" />
+              {isAdmin && <QuickAction icon={PieChart} label="Relatórios IA" href="/reports" />}
               <QuickAction icon={History} label="Histórico Completo" href="/history" />
             </CardContent>
           </Card>

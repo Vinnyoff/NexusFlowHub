@@ -1,15 +1,14 @@
-
 "use client";
 
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset, SidebarRail } from "@/components/ui/sidebar";
 import { Shirt, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AuthProvider, useAuth } from "@/app/lib/auth-store";
+import { useAuth } from "@/app/lib/auth-store";
 
 function AppSidebar() {
   const pathname = usePathname();
-  const { role } = useAuth();
+  const { role, logout } = useAuth();
   const isAdmin = role === "ADM";
 
   const menuItems = [
@@ -57,7 +56,10 @@ function AppSidebar() {
           </div>
         </div>
         <SidebarMenuButton 
-          onClick={() => window.location.href = "/"} 
+          onClick={() => {
+            logout();
+            window.location.href = "/";
+          }} 
           className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl h-11"
           tooltip="Sair"
         >
@@ -72,21 +74,19 @@ function AppSidebar() {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AuthProvider>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset className="bg-background">
-          <header className="flex h-16 items-center border-b px-6 gap-4 sticky top-0 bg-background/60 backdrop-blur-md z-10">
-            <SidebarTrigger />
-            <div className="flex-1">
-              <h2 className="font-headline font-bold text-lg text-primary/80">FashionFlow Studio</h2>
-            </div>
-          </header>
-          <main className="flex-1 p-6 md:p-8 overflow-y-auto">
-            {children}
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
-    </AuthProvider>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset className="bg-background">
+        <header className="flex h-16 items-center border-b px-6 gap-4 sticky top-0 bg-background/60 backdrop-blur-md z-10">
+          <SidebarTrigger />
+          <div className="flex-1">
+            <h2 className="font-headline font-bold text-lg text-primary/80">FashionFlow Studio</h2>
+          </div>
+        </header>
+        <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+          {children}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
