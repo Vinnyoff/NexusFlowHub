@@ -8,38 +8,71 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Barcode, Printer, Trash2, Edit } from "lucide-react";
+import { Plus, Search, Barcode, Printer, Trash2, Edit, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-
-interface ProductVariation {
-  id: string;
-  name: string;
-  brand: string;
-  model: string;
-  size: string;
-  price: number;
-  stock: number;
-  token: string;
-}
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, doc, deleteDoc } from "firebase/firestore";
+import { addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAdding, setIsAdding] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    brand: "",
+    model: "",
+    price: "",
+    stock: "",
+    size: "M"
+  });
   
-  // Mock products data
-  const [products, setProducts] = useState<ProductVariation[]>([
-    { id: "1", name: "Camiseta Basic", brand: "CottonOn", model: "Regular", size: "M", price: 49.90, stock: 15, token: "P-782-931-M" },
-    { id: "2", name: "Camiseta Basic", brand: "CottonOn", model: "Regular", size: "G", price: 49.90, stock: 8, token: "P-782-931-G" },
-    { id: "3", name: "Calça Jeans Slim", brand: "Levi's", model: "511", size: "42", price: 299.00, stock: 5, token: "P-455-221-42" },
-    { id: "4", name: "Jaqueta Couro", brand: "Zara", model: "Biker", size: "P", price: 549.90, stock: 2, token: "P-112-984-P" },
-  ]);
+  const { firestore } = useFirestore();
+  const { toast } = useToast();
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.token.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const productsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, "products");
+  }, [firestore]);
+
+  const { data: products, isLoading } = useCollection(productsQuery);
+
+  const filteredProducts = products?.filter(p => 
+    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    p.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  const handleSaveProduct = () => {
+    if (!firestore || !newProduct.name || !newProduct.price) return;
+
+    const productId = crypto.randomUUID();
+    const barcode = `FF-${Math.floor(1000 + Math.random() * 9000)}-${newProduct.size}`;
+    
+    const productData = {
+      id: productId,
+      name: newProduct.name,
+      brand: newProduct.brand,
+      model: newProduct.model,
+      size: newProduct.size,
+      price: parseFloat(newProduct.price),
+      quantity: parseInt(newProduct.stock) || 0,
+      barcode: barcode
+    };
+
+    setDocumentNonBlocking(doc(firestore, "products", productId), productData, { merge: true });
+    
+    setIsAdding(false);
+    setNewProduct({ name: "", brand: "", model: "", price: "", stock: "", size: "M" });
+    toast({ title: "Sucesso", description: "Produto cadastrado com sucesso!" });
+  };
+
+  const handleDelete = (id: string) => {
+    if (!firestore) return;
+    deleteDoc(doc(firestore, "products", id));
+    toast({ title: "Removido", description: "Produto excluído do estoque." });
+  };
 
   return (
     <AppLayout>
@@ -64,39 +97,66 @@ export default function ProductsPage() {
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
                   <Label>Nome do Produto</Label>
-                  <Input placeholder="Ex: Camiseta Oversized" />
+                  <Input 
+                    placeholder="Ex: Camiseta Oversized" 
+                    value={newProduct.name}
+                    onChange={e => setNewProduct({...newProduct, name: e.target.value})}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Marca</Label>
-                  <Input placeholder="Ex: Nike" />
+                  <Input 
+                    placeholder="Ex: Nike" 
+                    value={newProduct.brand}
+                    onChange={e => setNewProduct({...newProduct, brand: e.target.value})}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Modelo</Label>
-                  <Input placeholder="Ex: Sport" />
+                  <Input 
+                    placeholder="Ex: Sport" 
+                    value={newProduct.model}
+                    onChange={e => setNewProduct({...newProduct, model: e.target.value})}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Preço (R$)</Label>
-                  <Input type="number" step="0.01" placeholder="0,00" />
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    placeholder="0,00" 
+                    value={newProduct.price}
+                    onChange={e => setNewProduct({...newProduct, price: e.target.value})}
+                  />
                 </div>
                 <div className="space-y-2 col-span-2">
                   <Label>Tamanhos Disponíveis</Label>
                   <div className="flex gap-2">
                     {["P", "M", "G", "GG", "EG"].map(size => (
-                      <Badge key={size} variant="outline" className="px-4 py-2 cursor-pointer hover:bg-primary/10">
+                      <Badge 
+                        key={size} 
+                        variant={newProduct.size === size ? "default" : "outline"} 
+                        className="px-4 py-2 cursor-pointer transition-colors"
+                        onClick={() => setNewProduct({...newProduct, size})}
+                      >
                         {size}
                       </Badge>
                     ))}
-                    <Input placeholder="Personalizado" className="w-24" />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Qtd em Estoque (padrão)</Label>
-                  <Input type="number" placeholder="0" />
+                  <Label>Qtd em Estoque</Label>
+                  <Input 
+                    type="number" 
+                    placeholder="0" 
+                    value={newProduct.stock}
+                    onChange={e => setNewProduct({...newProduct, stock: e.target.value})}
+                  />
                 </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsAdding(false)}>Cancelar</Button>
-                <Button onClick={() => setIsAdding(false)}>Gerar Variações e Salvar</Button>
+                <Button onClick={handleSaveProduct}>Salvar Produto</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -115,58 +175,69 @@ export default function ProductsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Produto</TableHead>
-                  <TableHead>Marca/Modelo</TableHead>
-                  <TableHead>Tam.</TableHead>
-                  <TableHead>Preço</TableHead>
-                  <TableHead>Estoque</TableHead>
-                  <TableHead>Token/Barcode</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredProducts.map((product) => (
-                  <TableRow key={product.token} className="group">
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>
-                      <div className="text-xs text-muted-foreground">{product.brand}</div>
-                      <div className="text-sm">{product.model}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="font-bold">{product.size}</Badge>
-                    </TableCell>
-                    <TableCell>R$ {product.price.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <span className={product.stock < 5 ? "text-destructive font-bold" : ""}>
-                        {product.stock} un
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <code className="bg-muted px-2 py-1 rounded text-xs">{product.token}</code>
-                        <Barcode className="h-4 w-4 text-primary cursor-help" />
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-primary">
-                          <Printer className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            {isLoading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Produto</TableHead>
+                    <TableHead>Marca/Modelo</TableHead>
+                    <TableHead>Tam.</TableHead>
+                    <TableHead>Preço</TableHead>
+                    <TableHead>Estoque</TableHead>
+                    <TableHead>Barcode</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredProducts.map((product) => (
+                    <TableRow key={product.id} className="group">
+                      <TableCell className="font-medium">{product.name}</TableCell>
+                      <TableCell>
+                        <div className="text-xs text-muted-foreground">{product.brand}</div>
+                        <div className="text-sm">{product.model}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="font-bold">{product.size}</Badge>
+                      </TableCell>
+                      <TableCell>R$ {product.price?.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <span className={product.quantity < 5 ? "text-destructive font-bold" : ""}>
+                          {product.quantity} un
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <code className="bg-muted px-2 py-1 rounded text-xs">{product.barcode}</code>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => handleDelete(product.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredProducts.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                        Nenhum produto encontrado.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>

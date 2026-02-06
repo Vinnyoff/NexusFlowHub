@@ -6,17 +6,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar, Filter, Eye, Download } from "lucide-react";
+import { Search, Calendar, Filter, Eye, Download, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
 
 export default function SalesHistory() {
-  const mockSales = [
-    { id: "1028", date: "24/05/2024 14:32", cashier: "Caixa 01", items: 3, total: 189.90, method: "Cartão" },
-    { id: "1027", date: "24/05/2024 14:15", cashier: "Admin", items: 1, total: 49.90, method: "Dinheiro" },
-    { id: "1026", date: "24/05/2024 13:58", cashier: "Caixa 01", items: 2, total: 548.00, method: "Pix" },
-    { id: "1025", date: "24/05/2024 13:22", cashier: "Caixa 01", items: 1, total: 299.00, method: "Cartão" },
-    { id: "1024", date: "23/05/2024 18:45", cashier: "Admin", items: 5, total: 1240.50, method: "Cartão" },
-  ];
+  const { firestore } = useFirestore();
+  const { user } = useUser();
+
+  const salesQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, "users", user.uid, "sales");
+  }, [firestore, user]);
+
+  const { data: sales, isLoading } = useCollection(salesQuery);
 
   return (
     <AppLayout>
@@ -34,7 +38,7 @@ export default function SalesHistory() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por ID ou Vendedor" className="pl-10" />
+            <Input placeholder="Buscar por ID" className="pl-10" />
           </div>
           <div className="relative">
             <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -47,38 +51,49 @@ export default function SalesHistory() {
 
         <Card className="border-none shadow-sm">
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="pl-6">ID Venda</TableHead>
-                  <TableHead>Data e Hora</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Itens</TableHead>
-                  <TableHead>Pagamento</TableHead>
-                  <TableHead>Valor Total</TableHead>
-                  <TableHead className="text-right pr-6">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockSales.map((sale) => (
-                  <TableRow key={sale.id}>
-                    <TableCell className="pl-6 font-medium text-primary">#{sale.id}</TableCell>
-                    <TableCell>{sale.date}</TableCell>
-                    <TableCell>{sale.cashier}</TableCell>
-                    <TableCell>{sale.items} produtos</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{sale.method}</Badge>
-                    </TableCell>
-                    <TableCell className="font-bold">R$ {sale.total.toFixed(2)}</TableCell>
-                    <TableCell className="text-right pr-6">
-                      <Button variant="ghost" size="sm" className="gap-2 text-primary">
-                        <Eye className="h-4 w-4" /> Detalhes
-                      </Button>
-                    </TableCell>
+            {isLoading ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="pl-6">ID Venda</TableHead>
+                    <TableHead>Data e Hora</TableHead>
+                    <TableHead>Pagamento</TableHead>
+                    <TableHead>Valor Total</TableHead>
+                    <TableHead className="text-right pr-6">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {sales?.map((sale) => (
+                    <TableRow key={sale.id}>
+                      <TableCell className="pl-6 font-medium text-primary">
+                        #{sale.id.substring(0, 8)}
+                      </TableCell>
+                      <TableCell>{new Date(sale.dateTime).toLocaleString('pt-BR')}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{sale.paymentMethod}</Badge>
+                      </TableCell>
+                      <TableCell className="font-bold">R$ {sale.totalAmount?.toFixed(2)}</TableCell>
+                      <TableCell className="text-right pr-6">
+                        <Button variant="ghost" size="sm" className="gap-2 text-primary">
+                          <Eye className="h-4 w-4" /> Detalhes
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {sales?.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">
+                        Nenhuma venda registrada ainda.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>
