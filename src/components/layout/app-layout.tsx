@@ -1,3 +1,4 @@
+
 "use client";
 
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset, SidebarRail } from "@/components/ui/sidebar";
@@ -14,7 +15,7 @@ function AppSidebar() {
   const menuItems = [
     { title: "Painel", icon: LayoutDashboard, url: "/dashboard", roles: ["ADM", "CASHIER"] },
     { title: "Caixa", icon: ShoppingCart, url: "/pos", roles: ["ADM", "CASHIER"] },
-    { title: "Estoque", icon: Package, url: "/products", roles: ["ADM", "CASHIER"] },
+    { title: "Estoque", icon: Package, url: "/products", roles: ["ADM"] },
     { title: "Vendas", icon: History, url: "/history", roles: ["ADM", "CASHIER"] },
     { title: "Relatórios", icon: PieChart, url: "/reports", roles: ["ADM"] },
   ];

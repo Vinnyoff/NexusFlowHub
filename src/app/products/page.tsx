@@ -13,8 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, doc, deleteDoc } from "firebase/firestore";
-import { addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/app/lib/auth-store";
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,6 +31,7 @@ export default function ProductsPage() {
   
   const { firestore } = useFirestore();
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
 
   const productsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -45,7 +47,7 @@ export default function ProductsPage() {
   ) || [];
 
   const handleSaveProduct = () => {
-    if (!firestore || !newProduct.name || !newProduct.price) return;
+    if (!firestore || !newProduct.name || !newProduct.price || !isAdmin) return;
 
     const productId = crypto.randomUUID();
     const barcode = `FF-${Math.floor(1000 + Math.random() * 9000)}-${newProduct.size}`;
@@ -69,10 +71,26 @@ export default function ProductsPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (!firestore) return;
+    if (!firestore || !isAdmin) return;
     deleteDoc(doc(firestore, "products", id));
     toast({ title: "Removido", description: "Produto excluído do estoque." });
   };
+
+  if (!isAdmin) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+          <div className="bg-destructive/10 p-4 rounded-full">
+            <Package className="h-12 w-12 text-destructive opacity-50" />
+          </div>
+          <h1 className="text-2xl font-headline font-bold">Acesso Restrito</h1>
+          <p className="text-muted-foreground text-center max-w-md">
+            Apenas administradores podem gerenciar o estoque e cadastrar novos produtos.
+          </p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
