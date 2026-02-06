@@ -77,8 +77,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="bg-background">
-        <header className="flex h-14 items-center px-6 gap-4 sticky top-0 bg-background/60 backdrop-blur-md z-10">
+        <header className="flex h-11 items-center px-4 gap-4 sticky top-0 bg-background/60 backdrop-blur-md z-10 border-b border-border/40">
           <SidebarTrigger />
+          <div className="flex items-center gap-2">
+            <Shirt className="h-4 w-4 text-primary" />
+            <span className="font-headline font-bold text-primary tracking-tight text-sm">FashionFlow</span>
+          </div>
           <div className="flex-1" />
         </header>
         <main className="flex-1 p-6 md:p-8 overflow-y-auto">
