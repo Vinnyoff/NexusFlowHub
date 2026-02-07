@@ -160,50 +160,50 @@ export default function ProductsPage() {
                 Novo Produto
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[700px]">
+            <DialogContent className="sm:max-w-[550px]">
               <DialogHeader>
-                <DialogTitle className="font-headline text-2xl">Cadastrar Novo Produto</DialogTitle>
+                <DialogTitle className="font-headline text-xl">Cadastrar Novo Produto</DialogTitle>
               </DialogHeader>
               
-              <Tabs defaultValue="vestuario" value={activeTab} onValueChange={handleTabChange} className="w-full mt-4">
-                <TabsList className="grid w-full grid-cols-2 h-12 bg-muted/50 p-1">
-                  <TabsTrigger value="vestuario" className="rounded-md font-bold text-xs uppercase tracking-wider">
-                    <Layers className="h-4 w-4 mr-2" /> Vestuário Geral
+              <Tabs defaultValue="vestuario" value={activeTab} onValueChange={handleTabChange} className="w-full mt-2">
+                <TabsList className="grid w-full grid-cols-2 h-10 bg-muted/50 p-1">
+                  <TabsTrigger value="vestuario" className="rounded-md font-bold text-[10px] uppercase tracking-wider">
+                    <Layers className="h-3 w-3 mr-2" /> Vestuário
                   </TabsTrigger>
-                  <TabsTrigger value="calcas" className="rounded-md font-bold text-xs uppercase tracking-wider">
-                    <Package className="h-4 w-4 mr-2" /> Painel de Calças
+                  <TabsTrigger value="calcas" className="rounded-md font-bold text-[10px] uppercase tracking-wider">
+                    <Package className="h-3 w-3 mr-2" /> Calças
                   </TabsTrigger>
                 </TabsList>
 
-                <div className="grid grid-cols-2 gap-6 py-6">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Nome do Produto</Label>
+                <div className="grid grid-cols-2 gap-3 py-4">
+                  <div className="space-y-1 col-span-2 sm:col-span-1">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Nome</Label>
                     <Input 
-                      placeholder="Ex: Camiseta Oversized ou Calça Jeans Slim" 
+                      placeholder="Ex: Camiseta Oversized" 
                       value={newProduct.name}
                       onChange={e => setNewProduct({...newProduct, name: e.target.value})}
-                      className="rounded-xl border-primary/10"
+                      className="rounded-xl border-primary/10 h-9 text-sm"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1 col-span-2 sm:col-span-1">
                     <Label className="text-[10px] font-bold uppercase text-muted-foreground">Marca</Label>
                     <Input 
-                      placeholder="Ex: Nike ou Levi's" 
+                      placeholder="Ex: Nike" 
                       value={newProduct.brand}
                       onChange={e => setNewProduct({...newProduct, brand: e.target.value})}
-                      className="rounded-xl border-primary/10"
+                      className="rounded-xl border-primary/10 h-9 text-sm"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1 col-span-2 sm:col-span-1">
                     <Label className="text-[10px] font-bold uppercase text-muted-foreground">Modelo</Label>
                     <Input 
-                      placeholder="Ex: Sport ou Skinny" 
+                      placeholder="Ex: Sport" 
                       value={newProduct.model}
                       onChange={e => setNewProduct({...newProduct, model: e.target.value})}
-                      className="rounded-xl border-primary/10"
+                      className="rounded-xl border-primary/10 h-9 text-sm"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1 col-span-2 sm:col-span-1">
                     <Label className="text-[10px] font-bold uppercase text-muted-foreground">Preço (R$)</Label>
                     <Input 
                       type="number" 
@@ -211,19 +211,19 @@ export default function ProductsPage() {
                       placeholder="0,00" 
                       value={newProduct.price}
                       onChange={e => setNewProduct({...newProduct, price: e.target.value})}
-                      className="rounded-xl border-primary/10"
+                      className="rounded-xl border-primary/10 h-9 text-sm"
                     />
                   </div>
 
-                  <TabsContent value="vestuario" className="col-span-2 m-0 space-y-4">
+                  <TabsContent value="vestuario" className="col-span-2 m-0 space-y-3">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Tamanho Vestuário</Label>
-                      <div className="flex flex-wrap gap-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Tamanho</Label>
+                      <div className="flex flex-wrap gap-1.5">
                         {["PP", "P", "M", "G", "GG", "EG", "U"].map(size => (
                           <Badge 
                             key={size} 
                             variant={newProduct.size === size ? "default" : "outline"} 
-                            className="px-4 py-2 cursor-pointer transition-all hover:scale-105"
+                            className="px-3 py-1 cursor-pointer transition-all hover:scale-105 text-[10px]"
                             onClick={() => setNewProduct({...newProduct, size})}
                           >
                             {size}
@@ -233,15 +233,15 @@ export default function ProductsPage() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="calcas" className="col-span-2 m-0 space-y-4">
+                  <TabsContent value="calcas" className="col-span-2 m-0 space-y-3">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Tamanho Numérico (Calças)</Label>
-                      <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Tamanho Numérico</Label>
+                      <div className="grid grid-cols-6 sm:grid-cols-10 gap-1.5">
                         {["34", "36", "38", "40", "42", "44", "46", "48", "50", "52"].map(size => (
                           <Badge 
                             key={size} 
                             variant={newProduct.size === size ? "default" : "outline"} 
-                            className="px-3 py-2 cursor-pointer transition-all hover:scale-105 justify-center"
+                            className="px-2 py-1 cursor-pointer transition-all hover:scale-105 justify-center text-[10px]"
                             onClick={() => setNewProduct({...newProduct, size})}
                           >
                             {size}
@@ -251,22 +251,22 @@ export default function ProductsPage() {
                     </div>
                   </TabsContent>
 
-                  <div className="space-y-2 col-span-2">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Quantidade em Estoque</Label>
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Estoque Inicial</Label>
                     <Input 
                       type="number" 
                       placeholder="0" 
                       value={newProduct.stock}
                       onChange={e => setNewProduct({...newProduct, stock: e.target.value})}
-                      className="rounded-xl border-primary/10"
+                      className="rounded-xl border-primary/10 h-9 text-sm"
                     />
                   </div>
                 </div>
               </Tabs>
 
-              <DialogFooter className="border-t pt-6">
-                <Button type="button" variant="ghost" onClick={() => setIsAdding(false)} className="rounded-xl">Cancelar</Button>
-                <Button type="button" onClick={handleSaveProduct} className="rounded-xl px-8 shadow-lg shadow-primary/20">Salvar Produto</Button>
+              <DialogFooter className="border-t pt-4">
+                <Button type="button" variant="ghost" size="sm" onClick={() => setIsAdding(false)} className="rounded-xl">Cancelar</Button>
+                <Button type="button" size="sm" onClick={handleSaveProduct} className="rounded-xl px-6 shadow-lg shadow-primary/20">Salvar Produto</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
