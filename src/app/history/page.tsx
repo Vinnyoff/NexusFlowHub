@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -7,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar as CalendarIcon, Filter, Eye, Download, Loader2, Package, Trash2, AlertTriangle, CalendarDays, ChevronDown, ChevronUp, PlusCircle } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Filter, Eye, Download, Loader2, Package, Trash2, AlertTriangle, CalendarDays, ChevronDown, ChevronUp, PlusCircle, CreditCard, Banknote, QrCode } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, where, writeBatch, doc } from "firebase/firestore";
@@ -24,6 +23,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export default function SalesHistory() {
@@ -32,6 +38,7 @@ export default function SalesHistory() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const [paymentFilter, setPaymentFilter] = useState("ALL");
   const [isDeleting, setIsDeleting] = useState(false);
   const [expandedSales, setExpandedSales] = useState<Set<string>>(new Set());
   
@@ -54,12 +61,15 @@ export default function SalesHistory() {
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
 
   const filteredSales = combinedSales.filter(sale => {
-    const matchesId = sale.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesProduct = sale.saleItems?.some((item: any) => 
-      item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.brand?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    return matchesId || matchesProduct;
+    const matchesSearch = sale.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sale.saleItems?.some((item: any) => 
+        item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.brand?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    
+    const matchesPayment = paymentFilter === "ALL" || sale.paymentMethod === paymentFilter;
+    
+    return matchesSearch && matchesPayment;
   });
 
   const handleDeleteDaySales = async () => {
@@ -148,17 +158,31 @@ export default function SalesHistory() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="relative lg:col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="relative md:col-span-5">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar por ID da venda ou nome do produto..." 
+              placeholder="Buscar por ID ou produto..." 
               className="pl-10 h-12 rounded-xl shadow-sm border-muted"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="relative">
+          <div className="relative md:col-span-4">
+            <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+              <SelectTrigger className="h-12 rounded-xl border-muted bg-card shadow-sm pl-10">
+                <Filter className="absolute left-3 top-3.5 h-4 w-4 text-primary" />
+                <SelectValue placeholder="Forma de Pagamento" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="ALL">Todos os Pagamentos</SelectItem>
+                <SelectItem value="CARD">Cartão</SelectItem>
+                <SelectItem value="CASH">Dinheiro</SelectItem>
+                <SelectItem value="PIX">Pix</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="relative md:col-span-3">
             <CalendarIcon className="absolute left-3 top-3 h-4 w-4 text-primary" />
             <Input 
               type="date" 
@@ -263,10 +287,10 @@ export default function SalesHistory() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="font-bold text-[10px] uppercase bg-white border-border shadow-sm px-3 h-6">
-                            {sale.paymentMethod === 'CARD' ? 'Cartão' : 
-                             sale.paymentMethod === 'CASH' ? 'Dinheiro' : 
-                             sale.paymentMethod === 'PIX' ? 'Pix' : sale.paymentMethod || '---'}
+                          <Badge variant="outline" className="font-bold text-[10px] uppercase bg-white border-border shadow-sm px-3 h-6 flex items-center gap-1.5">
+                            {sale.paymentMethod === 'CARD' ? <><CreditCard className="h-3 w-3" /> Cartão</> : 
+                             sale.paymentMethod === 'CASH' ? <><Banknote className="h-3 w-3" /> Dinheiro</> : 
+                             sale.paymentMethod === 'PIX' ? <><QrCode className="h-3 w-3" /> Pix</> : sale.paymentMethod || '---'}
                           </Badge>
                         </TableCell>
                         <TableCell className="font-black text-primary text-lg">
@@ -285,7 +309,7 @@ export default function SalesHistory() {
                       <TableCell colSpan={6} className="text-center py-32 opacity-30">
                         <div className="flex flex-col items-center">
                           <Package className="h-20 w-20 mb-6" />
-                          <p className="text-lg font-bold uppercase tracking-[0.2em]">Sem vendas em {formattedSelectedDate}</p>
+                          <p className="text-lg font-bold uppercase tracking-[0.2em]">Sem vendas filtradas</p>
                         </div>
                       </TableCell>
                     </TableRow>
