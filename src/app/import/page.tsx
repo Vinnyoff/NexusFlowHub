@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppLayout } from "@/components/layout/app-layout";
@@ -21,7 +20,8 @@ import {
   TrendingUp,
   Percent,
   Building2,
-  PlusCircle
+  PlusCircle,
+  Sparkles
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -44,10 +44,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, doc, writeBatch, getDocs, query, where } from "firebase/firestore";
+import { identifyProductDetails } from "@/ai/flows/identify-product-details";
 
 interface InvoiceProduct {
   id: string;
   name: string;
+  brand: string;
+  model: string;
+  category: string;
   qty: number;
   price: number;
   convertedPrice: number;
@@ -56,6 +60,7 @@ interface InvoiceProduct {
   ncm: string;
   status: "new" | "exists";
   existingId?: string;
+  isAiOptimized?: boolean;
 }
 
 interface InvoiceSupplier {
@@ -70,6 +75,7 @@ export default function ImportPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [accessKey, setAccessKey] = useState("");
   const [isConsulting, setIsConsulting] = useState(false);
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [showProductsModal, setShowProductsModal] = useState(false);
   const [invoiceProducts, setInvoiceProducts] = useState<InvoiceProduct[]>([]);
@@ -110,6 +116,40 @@ export default function ImportPage() {
     })));
   };
 
+  const optimizeWithAi = async () => {
+    if (invoiceProducts.length === 0) return;
+    setIsAiProcessing(true);
+    
+    try {
+      const optimizedProducts = await Promise.all(
+        invoiceProducts.map(async (product) => {
+          if (product.isAiOptimized) return product;
+          
+          try {
+            const aiData = await identifyProductDetails({ description: product.name });
+            return {
+              ...product,
+              brand: aiData.brand,
+              model: aiData.model,
+              category: aiData.category,
+              isAiOptimized: true
+            };
+          } catch (e) {
+            console.error("Erro na IA para produto:", product.name, e);
+            return product;
+          }
+        })
+      );
+      
+      setInvoiceProducts(optimizedProducts);
+      toast({ title: "NexusIA Otimizada", description: "Dados de fabricante e modelo refinados com sucesso." });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erro na IA", description: "Não foi possível processar todos os itens." });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
   const parseNFXML = async (xmlText: string) => {
     try {
       const parser = new DOMParser();
@@ -121,20 +161,17 @@ export default function ImportPage() {
         if (idAttr) setAccessKey(idAttr.replace(/\D/g, ""));
       }
 
-      // Identificar Fornecedor (Emitente)
       const emit = xmlDoc.getElementsByTagName("emit")[0];
       if (emit) {
         const cnpj = emit.getElementsByTagName("CNPJ")[0]?.textContent || "";
         const name = emit.getElementsByTagName("xNome")[0]?.textContent || "";
         const fantasy = emit.getElementsByTagName("xFant")[0]?.textContent || "";
         
-        // Verificar se fornecedor existe
         const suppliersCol = collection(firestore!, "suppliers");
         const q = query(suppliersCol, where("cnpj", "==", cnpj));
         const snapshot = await getDocs(q);
         
         if (!snapshot.empty) {
-          const supplierData = snapshot.docs[0].data();
           setInvoiceSupplier({ cnpj, name, fantasyName: fantasy, status: "exists", id: snapshot.docs[0].id });
         } else {
           setInvoiceSupplier({ cnpj, name, fantasyName: fantasy, status: "new" });
@@ -167,6 +204,9 @@ export default function ImportPage() {
           products.push({
             id: (i + 1).toString(),
             name,
+            brand: "Padrão",
+            model: "Padrão",
+            category: "Geral",
             qty,
             price,
             convertedPrice,
@@ -227,10 +267,9 @@ export default function ImportPage() {
     
     setTimeout(async () => {
       setIsConsulting(false);
-      // Simulação de retorno da Sefaz
       const mockItems: InvoiceProduct[] = [
-        { id: "1", name: "Produto Exemplo 01", qty: 10, price: 45.00, convertedPrice: 45 * (1 + globalMargin/100), total: 450.00, barcode: "7891234567890", ncm: "61091000", status: "new" },
-        { id: "2", name: "Produto Exemplo 02", qty: 5, price: 110.00, convertedPrice: 110 * (1 + globalMargin/100), total: 550.00, barcode: "7890987654321", ncm: "62034200", status: "exists", existingId: existingProducts?.[0]?.id },
+        { id: "1", name: "CAMISETA NIKE DRY FIT MASCULINA AZUL G", brand: "Nike", model: "Dry Fit", category: "Vestuário", qty: 10, price: 45.00, convertedPrice: 45 * (1 + globalMargin/100), total: 450.00, barcode: "7891234567890", ncm: "61091000", status: "new" },
+        { id: "2", name: "TENIS ADIDAS ULTRABOOST 22 PRETO 42", brand: "Adidas", model: "Ultraboost 22", category: "Calçados", qty: 5, price: 110.00, convertedPrice: 110 * (1 + globalMargin/100), total: 550.00, barcode: "7890987654321", ncm: "62034200", status: "exists", existingId: existingProducts?.[0]?.id },
       ];
       setInvoiceSupplier({ cnpj: "12.345.678/0001-99", name: "DISTRIBUIDORA NEXUS S.A.", fantasyName: "Nexus Distrib", status: "new" });
       setInvoiceProducts(mockItems);
@@ -247,7 +286,6 @@ export default function ImportPage() {
     let supplierId = invoiceSupplier?.id;
 
     try {
-      // 1. Processar Fornecedor se for novo
       if (invoiceSupplier && invoiceSupplier.status === "new") {
         supplierId = crypto.randomUUID();
         const supplierRef = doc(firestore, "suppliers", supplierId);
@@ -260,7 +298,6 @@ export default function ImportPage() {
         });
       }
 
-      // 2. Processar Itens
       invoiceProducts.forEach((item) => {
         if (item.status === "exists" && item.existingId) {
           const existing = existingProducts?.find(p => p.id === item.existingId);
@@ -269,7 +306,9 @@ export default function ImportPage() {
             quantity: (existing?.quantity || 0) + item.qty,
             price: item.convertedPrice,
             ncm: item.ncm || existing?.ncm || "",
-            supplierId: supplierId || existing?.supplierId || ""
+            supplierId: supplierId || existing?.supplierId || "",
+            brand: item.brand !== "Padrão" ? item.brand : (existing?.brand || "Padrão"),
+            model: item.model !== "Padrão" ? item.model : (existing?.model || "Padrão")
           });
         } else {
           const newId = crypto.randomUUID();
@@ -277,9 +316,9 @@ export default function ImportPage() {
           batch.set(docRef, {
             id: newId,
             name: item.name,
-            brand: invoiceSupplier?.fantasyName || "Importado",
-            model: "NF-e",
-            category: "Geral",
+            brand: item.brand,
+            model: item.model,
+            category: item.category,
             size: "Padrão",
             price: item.convertedPrice,
             quantity: item.qty,
@@ -314,9 +353,8 @@ export default function ImportPage() {
     }
   };
 
-  const updateConvertedPrice = (id: string, newPrice: string) => {
-    const val = parseFloat(newPrice) || 0;
-    setInvoiceProducts(prev => prev.map(p => p.id === id ? { ...p, convertedPrice: val } : p));
+  const updateField = (id: string, field: keyof InvoiceProduct, value: any) => {
+    setInvoiceProducts(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
   };
 
   return (
@@ -452,7 +490,7 @@ export default function ImportPage() {
         </div>
 
         <Dialog open={showProductsModal} onOpenChange={setShowProductsModal}>
-          <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl">
+          <DialogContent className="max-w-[95vw] lg:max-w-7xl max-h-[95vh] flex flex-col p-0 overflow-hidden rounded-2xl">
             <DialogHeader className="p-6 border-b bg-muted/20">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
@@ -482,22 +520,30 @@ export default function ImportPage() {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3 bg-white p-3 rounded-xl border shadow-sm">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Percent className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="pr-2">
-                    <Label className="text-[9px] font-bold uppercase text-muted-foreground block">Margem Nota</Label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button 
+                    onClick={optimizeWithAi} 
+                    disabled={isAiProcessing || invoiceProducts.length === 0}
+                    className="h-11 px-6 font-bold gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-500/20"
+                  >
+                    {isAiProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Otimizar com NexusIA
+                  </Button>
+
+                  <div className="flex items-center gap-3 bg-white p-2 rounded-xl border shadow-sm h-11">
+                    <div className="p-1.5 bg-primary/10 rounded-lg">
+                      <Percent className="h-4 w-4 text-primary" />
+                    </div>
                     <div className="flex items-center gap-2">
                       <Input 
                         type="number" 
                         value={globalMargin}
                         onChange={(e) => setGlobalMargin(parseInt(e.target.value) || 0)}
-                        className="h-8 w-16 text-xs font-bold p-1"
+                        className="h-8 w-14 text-xs font-bold p-1 border-none focus-visible:ring-0"
                       />
                       <Button 
                         size="sm" 
-                        className="h-8 px-3 text-[10px] font-bold"
+                        className="h-8 px-3 text-[10px] font-bold rounded-lg"
                         onClick={() => applyGlobalMargin(globalMargin)}
                       >
                         Aplicar
@@ -512,23 +558,43 @@ export default function ImportPage() {
               <Table>
                 <TableHeader className="bg-muted/50 sticky top-0 z-10">
                   <TableRow>
-                    <TableHead className="pl-6 text-[10px] font-bold uppercase">Produto</TableHead>
-                    <TableHead className="text-[10px] font-bold uppercase">Fiscal (NCM)</TableHead>
+                    <TableHead className="pl-6 text-[10px] font-bold uppercase">Produto (NF-e)</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase text-indigo-600">Refinamento NexusIA</TableHead>
+                    <TableHead className="text-center text-[10px] font-bold uppercase">Fiscal</TableHead>
                     <TableHead className="text-center text-[10px] font-bold uppercase">Qtd</TableHead>
                     <TableHead className="text-right text-[10px] font-bold uppercase">Custo</TableHead>
-                    <TableHead className="text-right text-[10px] font-bold uppercase text-primary bg-primary/5">P. Venda Sugerido</TableHead>
-                    <TableHead className="text-right text-[10px] font-bold uppercase">Total</TableHead>
+                    <TableHead className="text-right text-[10px] font-bold uppercase text-primary bg-primary/5">P. Venda</TableHead>
                     <TableHead className="text-center text-[10px] font-bold uppercase">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {invoiceProducts.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="pl-6">
-                        <p className="font-bold text-sm line-clamp-1">{product.name}</p>
-                        <p className="text-[10px] text-muted-foreground">EAN: {product.barcode || "---"}</p>
+                    <TableRow key={product.id} className={product.isAiOptimized ? "bg-indigo-50/20" : ""}>
+                      <TableCell className="pl-6 max-w-[200px]">
+                        <p className="font-bold text-sm truncate">{product.name}</p>
+                        <p className="text-[10px] text-muted-foreground font-mono">EAN: {product.barcode || "---"}</p>
                       </TableCell>
                       <TableCell>
+                        <div className="grid grid-cols-2 gap-2 w-[240px]">
+                          <div className="space-y-1">
+                            <Label className="text-[8px] font-bold uppercase opacity-50">Marca</Label>
+                            <Input 
+                              value={product.brand}
+                              onChange={(e) => updateField(product.id, "brand", e.target.value)}
+                              className="h-7 text-[10px] font-bold border-indigo-200 focus:border-indigo-500 rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[8px] font-bold uppercase opacity-50">Modelo</Label>
+                            <Input 
+                              value={product.model}
+                              onChange={(e) => updateField(product.id, "model", e.target.value)}
+                              className="h-7 text-[10px] font-bold border-indigo-200 focus:border-indigo-500 rounded-lg"
+                            />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
                         <span className="text-xs font-mono text-muted-foreground">{product.ncm || "---"}</span>
                       </TableCell>
                       <TableCell className="text-center font-bold">{product.qty}</TableCell>
@@ -538,11 +604,10 @@ export default function ImportPage() {
                           type="number" 
                           step="0.01"
                           value={product.convertedPrice}
-                          onChange={(e) => updateConvertedPrice(product.id, e.target.value)}
+                          onChange={(e) => updateField(product.id, "convertedPrice", parseFloat(e.target.value) || 0)}
                           className="h-8 w-24 text-right font-black text-primary border-primary/20 bg-white ml-auto"
                         />
                       </TableCell>
-                      <TableCell className="text-right font-medium">R$ {product.total.toFixed(2)}</TableCell>
                       <TableCell className="text-center">
                         {product.status === "exists" ? (
                           <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[9px] uppercase font-bold">Reposição</Badge>
