@@ -51,10 +51,23 @@ export default function ProductsPage() {
     p.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
+  const calculateEAN13CheckDigit = (code: string) => {
+    let sum = 0;
+    for (let i = 0; i < 12; i++) {
+      sum += parseInt(code[i]) * (i % 2 === 0 ? 1 : 3);
+    }
+    const remainder = sum % 10;
+    return remainder === 0 ? 0 : 10 - remainder;
+  };
+
   const handleGenerateBarcode = () => {
-    const randomCode = `789${Math.floor(1000000000 + Math.random() * 9000000000)}`;
-    setFormData({ ...formData, barcode: randomCode });
-    toast({ title: "Código Gerado", description: "Um código de barras temporário foi atribuído." });
+    // Gera base de 12 dígitos (prefixo 789 + 9 dígitos aleatórios)
+    const base = `789${Math.floor(100000000 + Math.random() * 900000000)}`;
+    const checkDigit = calculateEAN13CheckDigit(base);
+    const fullCode = base + checkDigit;
+    
+    setFormData({ ...formData, barcode: fullCode });
+    toast({ title: "Código Gerado", description: `EAN-13 válido atribuído: ${fullCode}` });
   };
 
   const handleEdit = (product: any) => {
@@ -272,7 +285,7 @@ export default function ProductsPage() {
                           onClick={handleGenerateBarcode}
                         >
                           <Sparkles className="h-4 w-4 text-primary" />
-                          Gerar
+                          Gerar EAN
                         </Button>
                       </div>
                     </div>

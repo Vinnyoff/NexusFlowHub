@@ -6,11 +6,12 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Printer, Tag, Loader2, Barcode, CheckCircle2, FileText } from "lucide-react";
+import { Search, Printer, Tag, Loader2, CheckCircle2, FileText } from "lucide-react";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import Barcode from "react-barcode";
 
 export default function LabelsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,8 +33,6 @@ export default function LabelsPage() {
   ) || [];
 
   const handlePrint = () => {
-    // Dispara a impressão do navegador. 
-    // O usuário pode selecionar "Salvar como PDF" no destino da impressora.
     window.print();
   };
 
@@ -46,7 +45,6 @@ export default function LabelsPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Seletor de Produtos */}
           <Card className="lg:col-span-2 border-none shadow-sm">
             <CardHeader className="pb-3">
               <div className="relative">
@@ -79,7 +77,7 @@ export default function LabelsPage() {
                       <TableRow key={product.id} className={selectedProduct?.id === product.id ? "bg-primary/5" : ""}>
                         <TableCell className="pl-6 font-semibold">
                           {product.name}
-                          <div className="text-[10px] text-muted-foreground font-mono">EAN: {product.barcode}</div>
+                          <div className="text-[10px] text-muted-foreground font-mono">CODE: {product.barcode}</div>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-[10px] uppercase font-bold">{product.brand}</Badge>
@@ -111,7 +109,6 @@ export default function LabelsPage() {
             </CardContent>
           </Card>
 
-          {/* Pré-visualização e Configuração */}
           <div className="space-y-6">
             <Card className="border-none shadow-sm">
               <CardHeader>
@@ -133,11 +130,16 @@ export default function LabelsPage() {
                 
                 <div className="p-4 border border-dashed rounded-xl bg-muted/20 flex flex-col items-center justify-center min-h-[180px]">
                   {selectedProduct ? (
-                    <div className="text-center space-y-3">
+                    <div className="text-center space-y-2">
                       <p className="text-[10px] font-bold text-primary uppercase tracking-tight">{selectedProduct.name}</p>
-                      <div className="bg-white p-3 border rounded shadow-sm">
-                        <Barcode className="h-12 w-40 mx-auto text-black" />
-                        <p className="text-[8px] font-mono text-black mt-1">{selectedProduct.barcode}</p>
+                      <div className="bg-white p-2 border rounded shadow-sm scale-90 origin-center">
+                        <Barcode 
+                          value={selectedProduct.barcode} 
+                          width={1.2} 
+                          height={50} 
+                          fontSize={12}
+                          background="#ffffff"
+                        />
                       </div>
                       <p className="text-lg font-black">R$ {selectedProduct.price?.toFixed(2)}</p>
                     </div>
@@ -168,8 +170,8 @@ export default function LabelsPage() {
               <CardContent className="p-4 flex gap-3">
                 <FileText className="h-5 w-5 text-primary shrink-0" />
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  As etiquetas são geradas no formato padrão <strong>50mm x 30mm</strong>. 
-                  Certifique-se de ajustar as margens para "Nenhuma" na visualização de impressão para evitar cortes.
+                  As etiquetas utilizam códigos reais compatíveis com leitores a laser e CCD. 
+                  Certifique-se de ajustar as margens para "Nenhuma" na visualização de impressão.
                 </p>
               </CardContent>
             </Card>
@@ -177,7 +179,6 @@ export default function LabelsPage() {
         </div>
       </div>
 
-      {/* Versão de Impressão (Oculta na UI normal via print:hidden e exibida via print:block) */}
       <div className="hidden print:block bg-white p-0 m-0">
         <style dangerouslySetInnerHTML={{ __html: `
           @media print {
@@ -204,9 +205,14 @@ export default function LabelsPage() {
               <p className="text-[10px] text-black text-center font-bold line-clamp-1">
                 {selectedProduct?.name} {selectedProduct?.size && `(${selectedProduct.size})`}
               </p>
-              <div className="flex flex-col items-center flex-1 justify-center py-1">
-                <Barcode className="h-10 w-32 text-black" />
-                <p className="text-[8px] font-mono text-black font-bold">{selectedProduct?.barcode}</p>
+              <div className="flex flex-col items-center flex-1 justify-center py-1 scale-95">
+                <Barcode 
+                  value={selectedProduct?.barcode || "000000"} 
+                  width={1.2} 
+                  height={40} 
+                  fontSize={10}
+                  margin={0}
+                />
               </div>
               <p className="text-[14px] font-black text-black mt-1">
                 R$ {selectedProduct?.price?.toFixed(2)}
