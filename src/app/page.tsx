@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -36,23 +35,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen w-screen overflow-hidden bg-background p-4">
-      <div className="w-full max-w-[350px] space-y-6 animate-in fade-in zoom-in duration-500">
+    <div className="flex items-center justify-center h-screen w-screen overflow-hidden bg-primary p-4">
+      <div className="w-full max-w-[380px] space-y-6 animate-in fade-in zoom-in duration-500">
         <div className="flex flex-col items-center text-center space-y-2">
-          <div className="bg-primary p-3 rounded-2xl shadow-xl shadow-primary/20">
-            <LayoutGrid className="h-8 w-8 text-white" />
+          <div className="bg-white p-3 rounded-2xl shadow-xl">
+            <LayoutGrid className="h-8 w-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-headline font-bold text-primary tracking-tight">NexusFlow</h1>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] opacity-60">
+            <h1 className="text-3xl font-headline font-bold text-white tracking-tight">NexusFlow</h1>
+            <p className="text-[10px] text-white/70 font-bold uppercase tracking-[0.2em]">
               Gestão Empresarial
             </p>
           </div>
         </div>
 
-        <Card className="border-none shadow-2xl bg-card/40 backdrop-blur-md overflow-hidden rounded-3xl">
-          <CardContent className="p-6 pt-8">
-            <form onSubmit={handleLogin} className="space-y-4">
+        <Card className="border-none shadow-2xl bg-white rounded-3xl overflow-hidden">
+          <CardContent className="p-8 pt-10">
+            <form onSubmit={handleLogin} className="space-y-5">
               {error && (
                 <Alert variant="destructive" className="py-2 px-3 rounded-xl border-none bg-destructive/10">
                   <AlertCircle className="h-4 w-4" />
@@ -60,24 +59,24 @@ export default function LoginPage() {
                 </Alert>
               )}
 
-              <div className="space-y-1">
-                <Label htmlFor="email" className="text-[10px] font-bold uppercase text-muted-foreground ml-1">
-                  Usuário ou E-mail
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-[11px] font-bold uppercase text-muted-foreground ml-1">
+                  E-mail Corporativo
                 </Label>
                 <Input 
                   id="email"
                   type="email" 
-                  placeholder="admin@nexusflow.com" 
+                  placeholder="exemplo@nexusflow.com" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-xl border-primary/10 h-11 focus:ring-primary/20 transition-all"
+                  className="rounded-xl border-primary/10 h-12 focus:ring-accent/20 transition-all"
                   required
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label htmlFor="pass" className="text-[10px] font-bold uppercase text-muted-foreground ml-1">
-                  Senha
+              <div className="space-y-1.5">
+                <Label htmlFor="pass" className="text-[11px] font-bold uppercase text-muted-foreground ml-1">
+                  Senha de Acesso
                 </Label>
                 <div className="relative">
                   <Input 
@@ -86,13 +85,13 @@ export default function LoginPage() {
                     placeholder="••••••••" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="rounded-xl border-primary/10 h-11 focus:ring-primary/20 transition-all pr-10"
+                    className="rounded-xl border-primary/10 h-12 focus:ring-accent/20 transition-all pr-10"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-accent transition-colors"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -101,27 +100,27 @@ export default function LoginPage() {
 
               <Button 
                 type="submit"
-                className="w-full h-11 rounded-xl bg-primary hover:bg-accent font-bold tracking-wide transition-all shadow-lg shadow-primary/20 mt-2"
+                className="w-full h-12 rounded-xl bg-accent hover:bg-accent/90 text-white font-bold tracking-wide transition-all shadow-lg shadow-accent/20 mt-2"
                 disabled={isLoggingIn}
               >
                 {isLoggingIn ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  "ENTRAR NO SISTEMA"
+                  "ENTRAR NO NEXUSFLOW"
                 )}
               </Button>
             </form>
             
-            <div className="mt-6 pt-6 border-t border-border/50 text-center">
-              <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest opacity-60">
-                Acesso corporativo verificado
+            <div className="mt-8 pt-6 border-t border-border/50 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest opacity-60">
+                Acesso Seguro Verificado
               </p>
             </div>
           </CardContent>
         </Card>
         
-        <p className="text-center text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-40">
-          &copy; 2024 NexusFlow Enterprise
+        <p className="text-center text-[10px] text-white/50 font-bold uppercase tracking-widest">
+          &copy; 2024 NexusFlow Systems
         </p>
       </div>
     </div>
