@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Trash2, Loader2, Package, Layers } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Package, Layers, Barcode, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,8 +27,9 @@ export default function ProductsPage() {
     model: "",
     price: "",
     stock: "",
-    variant: "N/A",
-    category: "Geral"
+    variant: "Padrão",
+    category: "Geral",
+    barcode: ""
   });
   
   const firestore = useFirestore();
@@ -47,6 +48,12 @@ export default function ProductsPage() {
     p.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
+
+  const handleGenerateBarcode = () => {
+    const randomCode = `789${Math.floor(1000000000 + Math.random() * 9000000000)}`;
+    setNewProduct({ ...newProduct, barcode: randomCode });
+    toast({ title: "Código Gerado", description: "Um código de barras temporário foi atribuído." });
+  };
 
   const handleSaveProduct = () => {
     if (!newProduct.name || !newProduct.price) {
@@ -68,7 +75,8 @@ export default function ProductsPage() {
     }
 
     const productId = crypto.randomUUID();
-    const barcode = `NX-${Math.floor(1000 + Math.random() * 8999)}-${newProduct.variant.replace(/\s+/g, '')}`;
+    // Se não houver código de barras, gera um aleatório curto
+    const barcode = newProduct.barcode || `NX-${Math.floor(1000 + Math.random() * 8999)}-${newProduct.variant.replace(/\s+/g, '')}`;
     
     const productData = {
       id: productId,
@@ -103,7 +111,8 @@ export default function ProductsPage() {
       price: "", 
       stock: "", 
       variant: "Padrão",
-      category: "Geral"
+      category: "Geral",
+      barcode: ""
     });
   };
 
@@ -149,7 +158,7 @@ export default function ProductsPage() {
                 Novo Item
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[480px]">
+            <DialogContent className="sm:max-w-[520px]">
               <DialogHeader>
                 <DialogTitle className="font-headline text-xl">Cadastrar Novo Item</DialogTitle>
               </DialogHeader>
@@ -164,78 +173,101 @@ export default function ProductsPage() {
                   </TabsTrigger>
                 </TabsList>
 
-                <div className="grid grid-cols-2 gap-3 py-4">
-                  <div className="space-y-1 col-span-2">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Nome do Produto</Label>
+                <div className="grid grid-cols-2 gap-4 py-6">
+                  <div className="space-y-1.5 col-span-2">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Nome do Produto</Label>
                     <Input 
                       placeholder="Ex: Teclado Mecânico" 
                       value={newProduct.name}
                       onChange={e => setNewProduct({...newProduct, name: e.target.value})}
-                      className="rounded-xl border-primary/10 h-9 text-sm"
+                      className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                     />
                   </div>
                   
-                  <div className="space-y-1 col-span-2 sm:col-span-1">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Fabricante/Marca</Label>
+                  <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Fabricante/Marca</Label>
                     <Input 
                       placeholder="Ex: Dell" 
                       value={newProduct.brand}
                       onChange={e => setNewProduct({...newProduct, brand: e.target.value})}
-                      className="rounded-xl border-primary/10 h-9 text-sm"
+                      className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                     />
                   </div>
                   
-                  <div className="space-y-1 col-span-2 sm:col-span-1">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Categoria</Label>
+                  <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Categoria</Label>
                     <Input 
                       placeholder="Ex: Eletrônicos" 
                       value={newProduct.category}
                       onChange={e => setNewProduct({...newProduct, category: e.target.value})}
-                      className="rounded-xl border-primary/10 h-9 text-sm"
+                      className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                     />
                   </div>
 
-                  <TabsContent value="principal" className="col-span-2 m-0 grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Preço de Venda (R$)</Label>
+                  <TabsContent value="principal" className="col-span-2 m-0 grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Preço (R$)</Label>
                       <Input 
                         type="number" 
                         step="0.01" 
                         placeholder="0,00" 
                         value={newProduct.price}
                         onChange={e => setNewProduct({...newProduct, price: e.target.value})}
-                        className="rounded-xl border-primary/10 h-9 text-sm"
+                        className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Quantidade Inicial</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Quantidade</Label>
                       <Input 
                         type="number" 
                         placeholder="0" 
                         value={newProduct.stock}
                         onChange={e => setNewProduct({...newProduct, stock: e.target.value})}
-                        className="rounded-xl border-primary/10 h-9 text-sm"
+                        className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                       />
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="detalhes" className="col-span-2 m-0 space-y-3">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Modelo / SKU</Label>
+                  <TabsContent value="detalhes" className="col-span-2 m-0 grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5 col-span-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Código de Barras (Manual ou Leitor)</Label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Barcode className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                          <Input 
+                            placeholder="Aguardando leitura ou digitação..." 
+                            value={newProduct.barcode}
+                            onChange={e => setNewProduct({...newProduct, barcode: e.target.value})}
+                            className="rounded-xl border-primary/10 h-11 pl-10 text-sm bg-muted/20"
+                          />
+                        </div>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          className="h-11 rounded-xl border-dashed gap-2 text-xs"
+                          onClick={handleGenerateBarcode}
+                        >
+                          <Sparkles className="h-4 w-4 text-primary" />
+                          Gerar
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Modelo / SKU</Label>
                       <Input 
                         placeholder="Ex: K780-Wireless" 
                         value={newProduct.model}
                         onChange={e => setNewProduct({...newProduct, model: e.target.value})}
-                        className="rounded-xl border-primary/10 h-9 text-sm"
+                        className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Variante (Cor, Tamanho, etc)</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Variante</Label>
                       <Input 
                         placeholder="Ex: Preto" 
                         value={newProduct.variant}
                         onChange={e => setNewProduct({...newProduct, variant: e.target.value})}
-                        className="rounded-xl border-primary/10 h-9 text-sm"
+                        className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                       />
                     </div>
                   </TabsContent>
@@ -273,7 +305,7 @@ export default function ProductsPage() {
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="pl-6">Descrição do Item</TableHead>
                     <TableHead>Categoria</TableHead>
-                    <TableHead>Fabricante</TableHead>
+                    <TableHead>Identificação</TableHead>
                     <TableHead>Variante</TableHead>
                     <TableHead>Preço</TableHead>
                     <TableHead>Estoque</TableHead>
@@ -283,7 +315,10 @@ export default function ProductsPage() {
                 <TableBody>
                   {filteredProducts.map((product) => (
                     <TableRow key={product.id} className="group hover:bg-muted/50 transition-colors">
-                      <TableCell className="pl-6 font-semibold text-primary">{product.name}</TableCell>
+                      <TableCell className="pl-6 font-semibold text-primary">
+                        {product.name}
+                        <div className="text-[10px] text-muted-foreground font-mono mt-1">EAN: {product.barcode}</div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="rounded-md font-bold text-[10px] uppercase">{product.category || "Geral"}</Badge>
                       </TableCell>
