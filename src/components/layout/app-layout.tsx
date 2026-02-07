@@ -52,7 +52,7 @@ function AppSidebar() {
   const menuItems = [
     { title: "Painel", icon: LayoutDashboard, url: "/dashboard", roles: ["ADM", "CASHIER"] },
     { title: "PDV", icon: ShoppingCart, url: "/pos", roles: ["ADM", "CASHIER"] },
-    { title: "Inventário", icon: Package, url: "/products", roles: ["ADM"] },
+    { title: "Estoque", icon: Package, url: "/products", roles: ["ADM"] },
     { title: "Fornecedores", icon: Building2, url: "/suppliers", roles: ["ADM"] },
     { title: "Etiquetas", icon: Tag, url: "/labels", roles: ["ADM"] },
     { title: "Importação", icon: FileUp, url: "/import", roles: ["ADM"] },

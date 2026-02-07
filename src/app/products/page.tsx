@@ -355,7 +355,7 @@ export default function ProductsPage() {
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-24 gap-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <p className="text-sm font-medium text-muted-foreground">Sincronizando inventário...</p>
+                <p className="text-sm font-medium text-muted-foreground">Sincronizando estoque...</p>
               </div>
             ) : (
               <Table>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -126,7 +127,7 @@ export default function ReportsPage() {
                   </p>
                   <Button onClick={handleAiSuggestions} disabled={isAiLoading} className="w-full bg-primary hover:bg-accent text-white gap-2">
                     {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    Analisar Inventário
+                    Analisar Estoque
                   </Button>
                 </div>
               )}
