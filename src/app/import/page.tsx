@@ -18,9 +18,10 @@ import {
   ShoppingCart,
   ArrowRight,
   ClipboardList,
-  TrendingUp
+  TrendingUp,
+  Percent
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -63,6 +64,7 @@ export default function ImportPage() {
   const [showProductsModal, setShowProductsModal] = useState(false);
   const [invoiceProducts, setInvoiceProducts] = useState<InvoiceProduct[]>([]);
   const [totalInvoice, setTotalInvoice] = useState(0);
+  const [globalMargin, setGlobalMargin] = useState(50); // Margem padrão de 50%
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { toast } = useToast();
@@ -88,6 +90,13 @@ export default function ImportPage() {
   const generateInternalCode = () => {
     const base = `${Math.floor(1000000 + Math.random() * 9000000)}`;
     return base + calculateEAN8CheckDigit(base);
+  };
+
+  const applyGlobalMargin = (margin: number) => {
+    setInvoiceProducts(prev => prev.map(p => ({
+      ...p,
+      convertedPrice: p.price * (1 + margin / 100)
+    })));
   };
 
   const parseNFXML = (xmlText: string) => {
@@ -122,8 +131,7 @@ export default function ImportPage() {
             (p.name.toLowerCase() === name.toLowerCase())
           );
 
-          // Cálculo simples de preço convertido (ex: margem de 50%)
-          const convertedPrice = price * 1.5;
+          const convertedPrice = price * (1 + globalMargin / 100);
 
           products.push({
             id: (i + 1).toString(),
@@ -188,8 +196,8 @@ export default function ImportPage() {
     setTimeout(() => {
       setIsConsulting(false);
       const mockItems: InvoiceProduct[] = [
-        { id: "1", name: "Produto Exemplo 01", qty: 10, price: 45.00, convertedPrice: 67.50, total: 450.00, barcode: "7891234567890", ncm: "61091000", status: "new" },
-        { id: "2", name: "Produto Exemplo 02", qty: 5, price: 110.00, convertedPrice: 165.00, total: 550.00, barcode: "7890987654321", ncm: "62034200", status: "exists", existingId: existingProducts?.[0]?.id },
+        { id: "1", name: "Produto Exemplo 01", qty: 10, price: 45.00, convertedPrice: 45 * (1 + globalMargin/100), total: 450.00, barcode: "7891234567890", ncm: "61091000", status: "new" },
+        { id: "2", name: "Produto Exemplo 02", qty: 5, price: 110.00, convertedPrice: 110 * (1 + globalMargin/100), total: 550.00, barcode: "7890987654321", ncm: "62034200", status: "exists", existingId: existingProducts?.[0]?.id },
       ];
       setInvoiceProducts(mockItems);
       setTotalInvoice(1000.00);
@@ -210,7 +218,7 @@ export default function ImportPage() {
           const docRef = doc(firestore, "products", item.existingId);
           batch.update(docRef, {
             quantity: (existing?.quantity || 0) + item.qty,
-            price: item.convertedPrice, // Usa o preço convertido para venda
+            price: item.convertedPrice,
             ncm: item.ncm || existing?.ncm || ""
           });
         } else {
@@ -223,7 +231,7 @@ export default function ImportPage() {
             model: "NF-e",
             category: "Geral",
             size: "Padrão",
-            price: item.convertedPrice, // Usa o preço convertido para venda
+            price: item.convertedPrice,
             quantity: item.qty,
             barcode: item.barcode,
             ncm: item.ncm,
@@ -351,36 +359,50 @@ export default function ImportPage() {
           <div className="space-y-6">
             <Card className="border-none shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg font-headline">Status do Sistema</CardTitle>
+                <CardTitle className="text-lg font-headline">Configurações de Entrada</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold">Conexão com Banco</p>
-                    <p className="text-xs text-muted-foreground">Pronto para atualizar estoque.</p>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Margem de Lucro Global (%)</Label>
+                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">{globalMargin}%</Badge>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="number" 
+                      value={globalMargin}
+                      onChange={(e) => setGlobalMargin(parseInt(e.target.value) || 0)}
+                      className="h-10 rounded-xl bg-muted/20"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-10 w-10 shrink-0"
+                      onClick={() => applyGlobalMargin(globalMargin)}
+                      title="Aplicar a todos os itens atuais"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground italic">Esta margem será usada para calcular o Preço Convertido automaticamente.</p>
+                </div>
+                
+                <div className="border-t pt-4 space-y-4">
+                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold">Conexão com Banco</p>
+                      <p className="text-xs text-muted-foreground">Pronto para atualizar estoque.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                    <FileText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold">Leitor XML 4.0</p>
+                      <p className="text-xs text-muted-foreground">Mapeamento de EAN e NCM ativo.</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                  <FileText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-bold">Leitor XML 4.0</p>
-                    <p className="text-xs text-muted-foreground">Mapeamento de EAN e NCM ativo.</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-primary text-white border-none shadow-lg rounded-2xl">
-              <CardHeader>
-                <CardTitle className="text-lg font-headline flex items-center gap-2 text-white">
-                  <AlertCircle className="h-5 w-5" /> Importação Inteligente
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs opacity-90 leading-relaxed">
-                  O sistema reconhece itens cadastrados pelo Código de Barras e importa automaticamente o <strong>NCM</strong> para conformidade fiscal.
-                </p>
               </CardContent>
             </Card>
           </div>
@@ -389,13 +411,41 @@ export default function ImportPage() {
         <Dialog open={showProductsModal} onOpenChange={setShowProductsModal}>
           <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl">
             <DialogHeader className="p-6 border-b bg-muted/20">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center text-white">
-                  <TableIcon className="h-6 w-6" />
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center text-white">
+                    <TableIcon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-2xl font-headline font-bold text-primary">Conferência da Nota</DialogTitle>
+                    <DialogDescription className="text-xs font-mono">Chave: {accessKey || "Importação Manual"}</DialogDescription>
+                  </div>
                 </div>
-                <div>
-                  <DialogTitle className="text-2xl font-headline font-bold text-primary">Conferência da Nota</DialogTitle>
-                  <DialogDescription className="text-xs font-mono">Chave: {accessKey || "Importação Manual"}</DialogDescription>
+                <div className="flex items-center gap-3 bg-white p-2 rounded-xl border shadow-sm">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Percent className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="pr-2">
+                    <Label className="text-[9px] font-bold uppercase text-muted-foreground block">Ajustar Margem Nota</Label>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        type="number" 
+                        value={globalMargin}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          setGlobalMargin(val);
+                        }}
+                        className="h-7 w-16 text-xs font-bold p-1"
+                      />
+                      <Button 
+                        size="sm" 
+                        className="h-7 px-3 text-[10px] font-bold"
+                        onClick={() => applyGlobalMargin(globalMargin)}
+                      >
+                        Recalcular
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </DialogHeader>
