@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { onAuthStateChanged, User, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { onAuthStateChanged, User, signOut, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { useAuth as useFirebaseAuth } from "@/firebase";
 
 export type UserRole = "ADM" | "CASHIER";
@@ -44,11 +44,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      // Nota: Em um sistema real com Firebase Auth habilitado, usaríamos signInWithEmailAndPassword(firebaseAuth, email, pass)
-      // Aqui simulamos a lógica de validação solicitada para garantir o fluxo imediato.
       let valid = false;
       let newRole: UserRole | null = null;
 
+      // Validação das credenciais solicitadas
       if ((email === "admin@fashionflow.com" && pass === "admin") || 
           (email === "jairobraganca2020@gmail.com" && pass === "Jairo@Braganca")) {
         valid = true;
@@ -59,8 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (valid && newRole) {
-        // Para simplificar o teste, se for um dos e-mails reais, tentamos o login de fato se o usuário existir
-        // Mas por padrão mantemos a simulação para o protótipo
+        // No protótipo, simulamos o sucesso. Para persistência real com Firestore Rules,
+        // o usuário precisaria estar no Firebase Auth.
         setLoading(false);
         return { success: true };
       } else {
@@ -68,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, message: "E-mail ou senha incorretos." };
       }
     } catch (error: any) {
-      setLoading(error.message);
+      setLoading(false);
       return { success: false, message: error.message || "Erro ao autenticar." };
     }
   };

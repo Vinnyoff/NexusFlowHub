@@ -12,9 +12,10 @@ import { Plus, Search, Trash2, Loader2, Package } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, doc, deleteDoc, setDoc } from "firebase/firestore";
+import { collection, doc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/app/lib/auth-store";
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,7 +46,7 @@ export default function ProductsPage() {
     p.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  const handleSaveProduct = async () => {
+  const handleSaveProduct = () => {
     if (!newProduct.name || !newProduct.price) {
       toast({ 
         variant: "destructive", 
@@ -78,34 +79,25 @@ export default function ProductsPage() {
       barcode: barcode
     };
 
-    try {
-      const docRef = doc(firestore, "products", productId);
-      await setDoc(docRef, productData);
-      
-      setIsAdding(false);
-      setNewProduct({ name: "", brand: "", model: "", price: "", stock: "", size: "M" });
-      
-      toast({ 
-        title: "Produto Cadastrado", 
-        description: `${productData.name} foi adicionado ao estoque.` 
-      });
-    } catch (e: any) {
-      toast({ 
-        variant: "destructive", 
-        title: "Erro ao salvar", 
-        description: e.message || "Não foi possível conectar ao banco de dados." 
-      });
-    }
+    const docRef = doc(firestore, "products", productId);
+    
+    // Mutação não-bloqueante conforme diretrizes
+    setDocumentNonBlocking(docRef, productData, { merge: true });
+    
+    setIsAdding(false);
+    setNewProduct({ name: "", brand: "", model: "", price: "", stock: "", size: "M" });
+    
+    toast({ 
+      title: "Produto Cadastrado", 
+      description: `${productData.name} foi adicionado ao estoque.` 
+    });
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!isAdmin || !firestore) return;
-    try {
-      await deleteDoc(doc(firestore, "products", id));
-      toast({ title: "Removido", description: "Produto excluído do estoque." });
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Erro", description: e.message });
-    }
+    const docRef = doc(firestore, "products", id);
+    deleteDocumentNonBlocking(docRef);
+    toast({ title: "Removido", description: "Produto excluído do estoque." });
   };
 
   if (!isAdmin) {
