@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Trash2, Loader2, Package, Layers, Barcode as BarcodeIcon, Sparkles, Pencil, ScanBarcode } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Package, Layers, Barcode as BarcodeIcon, Sparkles, Pencil, ScanBarcode, ClipboardList } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,7 +32,8 @@ export default function ProductsPage() {
     variant: "Padrão",
     category: "Geral",
     barcode: "",
-    internalCode: ""
+    internalCode: "",
+    ncm: ""
   });
   
   const firestore = useFirestore();
@@ -50,7 +51,8 @@ export default function ProductsPage() {
     p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
     p.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.barcode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.internalCode?.toLowerCase().includes(searchTerm.toLowerCase())
+    p.internalCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.ncm?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const calculateEAN8CheckDigit = (code: string) => {
@@ -83,7 +85,8 @@ export default function ProductsPage() {
       variant: product.size || "Padrão",
       category: product.category || "Geral",
       barcode: product.barcode || "",
-      internalCode: product.internalCode || ""
+      internalCode: product.internalCode || "",
+      ncm: product.ncm || ""
     });
     setIsDialogOpen(true);
     setActiveTab("principal");
@@ -120,7 +123,8 @@ export default function ProductsPage() {
       price: parseFloat(formData.price) || 0,
       quantity: parseInt(formData.stock) || 0,
       barcode: formData.barcode || "",
-      internalCode: finalInternalCode
+      internalCode: finalInternalCode,
+      ncm: formData.ncm || ""
     };
 
     if (editingId) {
@@ -152,7 +156,8 @@ export default function ProductsPage() {
       variant: "Padrão",
       category: "Geral",
       barcode: "",
-      internalCode: ""
+      internalCode: "",
+      ncm: ""
     });
   };
 
@@ -169,7 +174,7 @@ export default function ProductsPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-headline font-bold text-primary">Gestão de Estoque</h1>
-            <p className="text-muted-foreground">Administre seu inventário com códigos internos e de fábrica separados.</p>
+            <p className="text-muted-foreground">Administre seu inventário com códigos internos e fiscais (NCM).</p>
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -253,16 +258,31 @@ export default function ProductsPage() {
                   </TabsContent>
 
                   <TabsContent value="detalhes" className="col-span-2 m-0 space-y-5">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Código de Barras Original (EAN-13)</Label>
-                      <div className="relative">
-                        <BarcodeIcon className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
-                        <Input 
-                          placeholder="Escaneie o código de fábrica..." 
-                          value={formData.barcode}
-                          onChange={e => setFormData({...formData, barcode: e.target.value})}
-                          className="rounded-xl border-primary/10 h-12 pl-12 text-sm bg-muted/20"
-                        />
+                    <div className="grid grid-cols-2 gap-5">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Cód. Barras (EAN-13)</Label>
+                        <div className="relative">
+                          <BarcodeIcon className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            placeholder="Escaneie..." 
+                            value={formData.barcode}
+                            onChange={e => setFormData({...formData, barcode: e.target.value})}
+                            className="rounded-xl border-primary/10 h-12 pl-10 text-sm bg-muted/20"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Fiscal (NCM)</Label>
+                        <div className="relative">
+                          <ClipboardList className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            placeholder="00000000" 
+                            value={formData.ncm}
+                            onChange={e => setFormData({...formData, ncm: e.target.value})}
+                            className="rounded-xl border-primary/10 h-12 pl-10 text-sm bg-muted/20 font-mono"
+                            maxLength={8}
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -327,7 +347,7 @@ export default function ProductsPage() {
             <div className="relative">
               <Search className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
               <Input 
-                placeholder="Filtrar por nome, marca, código interno ou barras..." 
+                placeholder="Filtrar por nome, marca, códigos ou NCM..." 
                 className="pl-12 h-12 rounded-xl border-none bg-muted/20 focus-visible:ring-primary/20 text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -345,7 +365,7 @@ export default function ProductsPage() {
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-b border-border/50">
                     <TableHead className="pl-6 h-14 text-[11px] uppercase tracking-widest font-bold">Produto</TableHead>
-                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Códigos de Identificação</TableHead>
+                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Cód. / Fiscal</TableHead>
                     <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Categoria</TableHead>
                     <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Preço</TableHead>
                     <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Estoque</TableHead>
@@ -361,8 +381,9 @@ export default function ProductsPage() {
                       </TableCell>
                       <TableCell className="py-4">
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
                             <Badge variant="outline" className="text-[9px] h-4 font-mono uppercase bg-primary/5 text-primary border-primary/20">INT: {product.internalCode}</Badge>
+                            {product.ncm && <Badge variant="outline" className="text-[9px] h-4 font-mono uppercase bg-amber-50 text-amber-700 border-amber-200">NCM: {product.ncm}</Badge>}
                           </div>
                           {product.barcode && (
                             <div className="flex items-center gap-2">

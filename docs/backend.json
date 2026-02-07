@@ -47,6 +47,10 @@
         "internalCode": {
           "type": "string",
           "description": "The system-generated internal code (EAN-8)."
+        },
+        "ncm": {
+          "type": "string",
+          "description": "Nomenclatura Comum do Mercosul (NCM) code for tax classification."
         }
       },
       "required": [

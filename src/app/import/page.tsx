@@ -16,7 +16,8 @@ import {
   Loader2,
   Table as TableIcon,
   ShoppingCart,
-  ArrowRight
+  ArrowRight,
+  ClipboardList
 } from "lucide-react";
 import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +48,7 @@ interface InvoiceProduct {
   price: number;
   total: number;
   barcode: string;
+  ncm: string;
   status: "new" | "exists";
   existingId?: string;
 }
@@ -107,6 +109,7 @@ export default function ImportPage() {
         if (prodNode) {
           const name = prodNode.getElementsByTagName("xProd")[0]?.textContent || "Produto Sem Nome";
           const barcode = prodNode.getElementsByTagName("cEAN")[0]?.textContent || "";
+          const ncm = prodNode.getElementsByTagName("NCM")[0]?.textContent || "";
           const qty = parseFloat(prodNode.getElementsByTagName("qCom")[0]?.textContent || "0");
           const price = parseFloat(prodNode.getElementsByTagName("vUnCom")[0]?.textContent || "0");
           const itemTotal = parseFloat(prodNode.getElementsByTagName("vProd")[0]?.textContent || "0");
@@ -126,6 +129,7 @@ export default function ImportPage() {
             price,
             total: itemTotal,
             barcode,
+            ncm,
             status: existing ? "exists" : "new",
             existingId: existing?.id
           });
@@ -181,8 +185,8 @@ export default function ImportPage() {
     setTimeout(() => {
       setIsConsulting(false);
       const mockItems: InvoiceProduct[] = [
-        { id: "1", name: "Produto Exemplo 01", qty: 10, price: 45.00, total: 450.00, barcode: "7891234567890", status: "new" },
-        { id: "2", name: "Produto Exemplo 02", qty: 5, price: 110.00, total: 550.00, barcode: "7890987654321", status: "exists", existingId: existingProducts?.[0]?.id },
+        { id: "1", name: "Produto Exemplo 01", qty: 10, price: 45.00, total: 450.00, barcode: "7891234567890", ncm: "61091000", status: "new" },
+        { id: "2", name: "Produto Exemplo 02", qty: 5, price: 110.00, total: 550.00, barcode: "7890987654321", ncm: "62034200", status: "exists", existingId: existingProducts?.[0]?.id },
       ];
       setInvoiceProducts(mockItems);
       setTotalInvoice(1000.00);
@@ -204,7 +208,8 @@ export default function ImportPage() {
           const docRef = doc(firestore, "products", item.existingId);
           batch.update(docRef, {
             quantity: (existing?.quantity || 0) + item.qty,
-            price: item.price // Opcional: atualiza para o preço da última nota
+            price: item.price,
+            ncm: item.ncm || existing?.ncm || ""
           });
         } else {
           // Cria novo produto
@@ -220,6 +225,7 @@ export default function ImportPage() {
             price: item.price,
             quantity: item.qty,
             barcode: item.barcode,
+            ncm: item.ncm,
             internalCode: generateInternalCode()
           });
         }
@@ -353,7 +359,7 @@ export default function ImportPage() {
                   <FileText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-bold">Leitor XML 4.0</p>
-                    <p className="text-xs text-muted-foreground">Mapeamento de EAN ativo.</p>
+                    <p className="text-xs text-muted-foreground">Mapeamento de EAN e NCM ativo.</p>
                   </div>
                 </div>
               </CardContent>
@@ -367,7 +373,7 @@ export default function ImportPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-xs opacity-90 leading-relaxed">
-                  O sistema reconhece itens cadastrados pelo Código de Barras. Produtos novos recebem automaticamente um Código Interno (EAN-8) para etiquetas.
+                  O sistema reconhece itens cadastrados pelo Código de Barras e importa automaticamente o <strong>NCM</strong> para conformidade fiscal.
                 </p>
               </CardContent>
             </Card>
@@ -393,6 +399,7 @@ export default function ImportPage() {
                 <TableHeader className="bg-muted/50 sticky top-0 z-10">
                   <TableRow>
                     <TableHead className="pl-6 text-[10px] font-bold uppercase">Produto na Nota</TableHead>
+                    <TableHead className="text-[10px] font-bold uppercase">Fiscal (NCM)</TableHead>
                     <TableHead className="text-center text-[10px] font-bold uppercase">Qtd</TableHead>
                     <TableHead className="text-right text-[10px] font-bold uppercase">Preço Un.</TableHead>
                     <TableHead className="text-right text-[10px] font-bold uppercase">Total Item</TableHead>
@@ -405,6 +412,12 @@ export default function ImportPage() {
                       <TableCell className="pl-6">
                         <p className="font-bold text-sm line-clamp-1">{product.name}</p>
                         <p className="text-[10px] text-muted-foreground">EAN: {product.barcode || "SEM CÓDIGO"}</p>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <ClipboardList className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs font-mono text-muted-foreground">{product.ncm || "---"}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center font-bold">{product.qty}</TableCell>
                       <TableCell className="text-right font-medium">R$ {product.price.toFixed(2)}</TableCell>
