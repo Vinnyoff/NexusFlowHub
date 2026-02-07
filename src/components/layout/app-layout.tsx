@@ -1,11 +1,50 @@
 
 "use client";
 
+import { useState, useEffect } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset, SidebarRail } from "@/components/ui/sidebar";
-import { Shirt, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User } from "lucide-react";
+import { Shirt, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/lib/auth-store";
+import { Button } from "@/components/ui/button";
+
+function ThemeToggle() {
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const isDarkMode = document.documentElement.classList.contains("dark");
+    setIsDark(isDarkMode);
+  }, []);
+
+  const toggleTheme = () => {
+    const newDark = !isDark;
+    setIsDark(newDark);
+    if (newDark) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("ff-theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("ff-theme", "light");
+    }
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleTheme}
+      className="h-8 w-8 rounded-full"
+      title={isDark ? "Mudar para modo claro" : "Mudar para modo escuro"}
+    >
+      {isDark ? (
+        <Sun className="h-4 w-4 text-amber-400" />
+      ) : (
+        <Moon className="h-4 w-4 text-primary" />
+      )}
+    </Button>
+  );
+}
 
 function AppSidebar() {
   const pathname = usePathname();
@@ -85,6 +124,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="font-headline font-bold text-primary tracking-tight text-sm">FashionFlow</span>
           </div>
           <div className="flex-1" />
+          <ThemeToggle />
         </header>
         <main className="flex-1 p-6 md:p-8 overflow-y-auto">
           {children}
