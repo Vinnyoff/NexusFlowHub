@@ -380,14 +380,23 @@ export default function ProductsPage() {
                         <div className="text-[10px] text-muted-foreground uppercase tracking-tight">{product.brand} | {product.model || '-'}</div>
                       </TableCell>
                       <TableCell className="py-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
-                            <Badge variant="outline" className="text-[9px] h-4 font-mono uppercase bg-primary/5 text-primary border-primary/20">INT: {product.internalCode}</Badge>
-                            {product.ncm && <Badge variant="outline" className="text-[9px] h-4 font-mono uppercase bg-amber-50 text-amber-700 border-amber-200">NCM: {product.ncm}</Badge>}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className="text-[10px] font-mono font-bold bg-primary/10 text-primary border-primary/20 px-1.5 h-5 uppercase tracking-tighter">
+                              INT: {product.internalCode}
+                            </Badge>
+                            {product.ncm && (
+                              <Badge variant="outline" className="text-[10px] font-mono font-bold bg-amber-500/10 text-amber-700 border-amber-500/20 px-1.5 h-5 uppercase tracking-tighter">
+                                NCM: {product.ncm}
+                              </Badge>
+                            )}
                           </div>
                           {product.barcode && (
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-[9px] h-4 font-mono uppercase bg-muted text-muted-foreground border-none">EAN: {product.barcode}</Badge>
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <BarcodeIcon className="h-3 w-3" />
+                              <span className="text-[10px] font-mono font-medium tracking-tight">
+                                {product.barcode}
+                              </span>
                             </div>
                           )}
                         </div>
