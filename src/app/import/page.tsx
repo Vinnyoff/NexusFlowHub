@@ -19,7 +19,9 @@ import {
   ArrowRight,
   ClipboardList,
   TrendingUp,
-  Percent
+  Percent,
+  Building2,
+  PlusCircle
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -41,19 +43,27 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, doc, writeBatch } from "firebase/firestore";
+import { collection, doc, writeBatch, getDocs, query, where } from "firebase/firestore";
 
 interface InvoiceProduct {
   id: string;
   name: string;
   qty: number;
   price: number;
-  convertedPrice: number; // Preço de venda sugerido/convertido
+  convertedPrice: number;
   total: number;
   barcode: string;
   ncm: string;
   status: "new" | "exists";
   existingId?: string;
+}
+
+interface InvoiceSupplier {
+  cnpj: string;
+  name: string;
+  fantasyName: string;
+  status: "new" | "exists";
+  id?: string;
 }
 
 export default function ImportPage() {
@@ -63,8 +73,9 @@ export default function ImportPage() {
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [showProductsModal, setShowProductsModal] = useState(false);
   const [invoiceProducts, setInvoiceProducts] = useState<InvoiceProduct[]>([]);
+  const [invoiceSupplier, setInvoiceSupplier] = useState<InvoiceSupplier | null>(null);
   const [totalInvoice, setTotalInvoice] = useState(0);
-  const [globalMargin, setGlobalMargin] = useState(50); // Margem padrão de 50%
+  const [globalMargin, setGlobalMargin] = useState(50);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { toast } = useToast();
@@ -99,7 +110,7 @@ export default function ImportPage() {
     })));
   };
 
-  const parseNFXML = (xmlText: string) => {
+  const parseNFXML = async (xmlText: string) => {
     try {
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(xmlText, "text/xml");
@@ -108,6 +119,26 @@ export default function ImportPage() {
       if (infNFe) {
         const idAttr = infNFe.getAttribute("Id");
         if (idAttr) setAccessKey(idAttr.replace(/\D/g, ""));
+      }
+
+      // Identificar Fornecedor (Emitente)
+      const emit = xmlDoc.getElementsByTagName("emit")[0];
+      if (emit) {
+        const cnpj = emit.getElementsByTagName("CNPJ")[0]?.textContent || "";
+        const name = emit.getElementsByTagName("xNome")[0]?.textContent || "";
+        const fantasy = emit.getElementsByTagName("xFant")[0]?.textContent || "";
+        
+        // Verificar se fornecedor existe
+        const suppliersCol = collection(firestore!, "suppliers");
+        const q = query(suppliersCol, where("cnpj", "==", cnpj));
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+          const supplierData = snapshot.docs[0].data();
+          setInvoiceSupplier({ cnpj, name, fantasyName: fantasy, status: "exists", id: snapshot.docs[0].id });
+        } else {
+          setInvoiceSupplier({ cnpj, name, fantasyName: fantasy, status: "new" });
+        }
       }
 
       const items = xmlDoc.getElementsByTagName("det");
@@ -152,6 +183,7 @@ export default function ImportPage() {
       setTotalInvoice(total);
       setShowProductsModal(true);
     } catch (error) {
+      console.error(error);
       toast({
         variant: "destructive",
         title: "Erro ao ler XML",
@@ -193,12 +225,14 @@ export default function ImportPage() {
 
     setIsConsulting(true);
     
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsConsulting(false);
+      // Simulação de retorno da Sefaz
       const mockItems: InvoiceProduct[] = [
         { id: "1", name: "Produto Exemplo 01", qty: 10, price: 45.00, convertedPrice: 45 * (1 + globalMargin/100), total: 450.00, barcode: "7891234567890", ncm: "61091000", status: "new" },
         { id: "2", name: "Produto Exemplo 02", qty: 5, price: 110.00, convertedPrice: 110 * (1 + globalMargin/100), total: 550.00, barcode: "7890987654321", ncm: "62034200", status: "exists", existingId: existingProducts?.[0]?.id },
       ];
+      setInvoiceSupplier({ cnpj: "12.345.678/0001-99", name: "DISTRIBUIDORA NEXUS S.A.", fantasyName: "Nexus Distrib", status: "new" });
       setInvoiceProducts(mockItems);
       setTotalInvoice(1000.00);
       setShowProductsModal(true);
@@ -210,8 +244,23 @@ export default function ImportPage() {
 
     setIsFinalizing(true);
     const batch = writeBatch(firestore);
+    let supplierId = invoiceSupplier?.id;
 
     try {
+      // 1. Processar Fornecedor se for novo
+      if (invoiceSupplier && invoiceSupplier.status === "new") {
+        supplierId = crypto.randomUUID();
+        const supplierRef = doc(firestore, "suppliers", supplierId);
+        batch.set(supplierRef, {
+          id: supplierId,
+          cnpj: invoiceSupplier.cnpj,
+          name: invoiceSupplier.name,
+          fantasyName: invoiceSupplier.fantasyName,
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      // 2. Processar Itens
       invoiceProducts.forEach((item) => {
         if (item.status === "exists" && item.existingId) {
           const existing = existingProducts?.find(p => p.id === item.existingId);
@@ -219,7 +268,8 @@ export default function ImportPage() {
           batch.update(docRef, {
             quantity: (existing?.quantity || 0) + item.qty,
             price: item.convertedPrice,
-            ncm: item.ncm || existing?.ncm || ""
+            ncm: item.ncm || existing?.ncm || "",
+            supplierId: supplierId || existing?.supplierId || ""
           });
         } else {
           const newId = crypto.randomUUID();
@@ -227,7 +277,7 @@ export default function ImportPage() {
           batch.set(docRef, {
             id: newId,
             name: item.name,
-            brand: "Importado",
+            brand: invoiceSupplier?.fantasyName || "Importado",
             model: "NF-e",
             category: "Geral",
             size: "Padrão",
@@ -235,7 +285,8 @@ export default function ImportPage() {
             quantity: item.qty,
             barcode: item.barcode,
             ncm: item.ncm,
-            internalCode: generateInternalCode()
+            internalCode: generateInternalCode(),
+            supplierId: supplierId || ""
           });
         }
       });
@@ -245,10 +296,11 @@ export default function ImportPage() {
       setShowProductsModal(false);
       setAccessKey("");
       setInvoiceProducts([]);
+      setInvoiceSupplier(null);
       
       toast({
         title: "Sucesso!",
-        description: `${invoiceProducts.length} itens foram processados e o estoque foi atualizado.`,
+        description: `Entrada de estoque concluída com sucesso.`,
       });
     } catch (error) {
       console.error("Erro na importação:", error);
@@ -379,27 +431,18 @@ export default function ImportPage() {
                       size="icon" 
                       className="h-10 w-10 shrink-0"
                       onClick={() => applyGlobalMargin(globalMargin)}
-                      title="Aplicar a todos os itens atuais"
                     >
                       <CheckCircle2 className="h-4 w-4" />
                     </Button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground italic">Esta margem será usada para calcular o Preço Convertido automaticamente.</p>
                 </div>
                 
                 <div className="border-t pt-4 space-y-4">
                   <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                    <Building2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-bold">Conexão com Banco</p>
-                      <p className="text-xs text-muted-foreground">Pronto para atualizar estoque.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                    <FileText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-bold">Leitor XML 4.0</p>
-                      <p className="text-xs text-muted-foreground">Mapeamento de EAN e NCM ativo.</p>
+                      <p className="text-sm font-bold">Gestão de Fornecedores</p>
+                      <p className="text-xs text-muted-foreground">Novos cadastros automáticos.</p>
                     </div>
                   </div>
                 </div>
@@ -409,40 +452,55 @@ export default function ImportPage() {
         </div>
 
         <Dialog open={showProductsModal} onOpenChange={setShowProductsModal}>
-          <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl">
+          <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl">
             <DialogHeader className="p-6 border-b bg-muted/20">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center text-white">
+                  <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center text-white shrink-0">
                     <TableIcon className="h-6 w-6" />
                   </div>
                   <div>
                     <DialogTitle className="text-2xl font-headline font-bold text-primary">Conferência da Nota</DialogTitle>
-                    <DialogDescription className="text-xs font-mono">Chave: {accessKey || "Importação Manual"}</DialogDescription>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Building2 className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs font-bold text-muted-foreground">Fornecedor:</span>
+                      {invoiceSupplier ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-foreground">{invoiceSupplier.name}</span>
+                          {invoiceSupplier.status === "new" ? (
+                            <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[9px] gap-1">
+                              <PlusCircle className="h-2 w-2" /> NOVO CADASTRO
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[9px]">SISTEMA</Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs italic text-muted-foreground">Buscando...</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 bg-white p-2 rounded-xl border shadow-sm">
+                
+                <div className="flex items-center gap-3 bg-white p-3 rounded-xl border shadow-sm">
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <Percent className="h-4 w-4 text-primary" />
                   </div>
                   <div className="pr-2">
-                    <Label className="text-[9px] font-bold uppercase text-muted-foreground block">Ajustar Margem Nota</Label>
+                    <Label className="text-[9px] font-bold uppercase text-muted-foreground block">Margem Nota</Label>
                     <div className="flex items-center gap-2">
                       <Input 
                         type="number" 
                         value={globalMargin}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 0;
-                          setGlobalMargin(val);
-                        }}
-                        className="h-7 w-16 text-xs font-bold p-1"
+                        onChange={(e) => setGlobalMargin(parseInt(e.target.value) || 0)}
+                        className="h-8 w-16 text-xs font-bold p-1"
                       />
                       <Button 
                         size="sm" 
-                        className="h-7 px-3 text-[10px] font-bold"
+                        className="h-8 px-3 text-[10px] font-bold"
                         onClick={() => applyGlobalMargin(globalMargin)}
                       >
-                        Recalcular
+                        Aplicar
                       </Button>
                     </div>
                   </div>
@@ -454,13 +512,13 @@ export default function ImportPage() {
               <Table>
                 <TableHeader className="bg-muted/50 sticky top-0 z-10">
                   <TableRow>
-                    <TableHead className="pl-6 text-[10px] font-bold uppercase">Produto na Nota</TableHead>
+                    <TableHead className="pl-6 text-[10px] font-bold uppercase">Produto</TableHead>
                     <TableHead className="text-[10px] font-bold uppercase">Fiscal (NCM)</TableHead>
                     <TableHead className="text-center text-[10px] font-bold uppercase">Qtd</TableHead>
-                    <TableHead className="text-right text-[10px] font-bold uppercase">Preço Compra</TableHead>
-                    <TableHead className="text-right text-[10px] font-bold uppercase text-primary bg-primary/5">Preço Convertido</TableHead>
-                    <TableHead className="text-right text-[10px] font-bold uppercase">Total Item</TableHead>
-                    <TableHead className="text-center text-[10px] font-bold uppercase">Status</TableHead>
+                    <TableHead className="text-right text-[10px] font-bold uppercase">Custo</TableHead>
+                    <TableHead className="text-right text-[10px] font-bold uppercase text-primary bg-primary/5">P. Venda Sugerido</TableHead>
+                    <TableHead className="text-right text-[10px] font-bold uppercase">Total</TableHead>
+                    <TableHead className="text-center text-[10px] font-bold uppercase">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -468,34 +526,28 @@ export default function ImportPage() {
                     <TableRow key={product.id}>
                       <TableCell className="pl-6">
                         <p className="font-bold text-sm line-clamp-1">{product.name}</p>
-                        <p className="text-[10px] text-muted-foreground">EAN: {product.barcode || "SEM CÓDIGO"}</p>
+                        <p className="text-[10px] text-muted-foreground">EAN: {product.barcode || "---"}</p>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1.5">
-                          <ClipboardList className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs font-mono text-muted-foreground">{product.ncm || "---"}</span>
-                        </div>
+                        <span className="text-xs font-mono text-muted-foreground">{product.ncm || "---"}</span>
                       </TableCell>
                       <TableCell className="text-center font-bold">{product.qty}</TableCell>
                       <TableCell className="text-right font-medium">R$ {product.price.toFixed(2)}</TableCell>
                       <TableCell className="text-right bg-primary/5">
-                        <div className="flex items-center justify-end gap-2">
-                          <TrendingUp className="h-3 w-3 text-primary" />
-                          <Input 
-                            type="number" 
-                            step="0.01"
-                            value={product.convertedPrice}
-                            onChange={(e) => updateConvertedPrice(product.id, e.target.value)}
-                            className="h-8 w-24 text-right font-black text-primary border-primary/20 bg-white"
-                          />
-                        </div>
+                        <Input 
+                          type="number" 
+                          step="0.01"
+                          value={product.convertedPrice}
+                          onChange={(e) => updateConvertedPrice(product.id, e.target.value)}
+                          className="h-8 w-24 text-right font-black text-primary border-primary/20 bg-white ml-auto"
+                        />
                       </TableCell>
                       <TableCell className="text-right font-medium">R$ {product.total.toFixed(2)}</TableCell>
                       <TableCell className="text-center">
                         {product.status === "exists" ? (
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[9px] uppercase font-bold">Atualizar</Badge>
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[9px] uppercase font-bold">Reposição</Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[9px] uppercase font-bold">Novo</Badge>
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[9px] uppercase font-bold">Inclusão</Badge>
                         )}
                       </TableCell>
                     </TableRow>
@@ -508,7 +560,7 @@ export default function ImportPage() {
               <div className="flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 text-primary" />
                 <div>
-                  <p className="text-[10px] font-bold uppercase text-muted-foreground leading-none">Total da Nota</p>
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground leading-none">Total Geral NF</p>
                   <p className="text-xl font-black text-primary">R$ {totalInvoice.toFixed(2)}</p>
                 </div>
               </div>
@@ -522,7 +574,7 @@ export default function ImportPage() {
                   className="bg-primary hover:bg-accent text-white font-bold rounded-xl px-8 h-11 gap-2 shadow-lg shadow-primary/20"
                 >
                   {isFinalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                  Confirmar e Importar
+                  Finalizar Importação
                 </Button>
               </DialogFooter>
             </div>

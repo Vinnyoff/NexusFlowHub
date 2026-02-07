@@ -3,51 +3,31 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
-
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
-    }
-
-    /** 
-     * Simplificado para o protótipo: permite se estiver logado.
-     * Em produção, verifique via roles_admin/{userId}
-     */
     function isAdmin() {
       return isSignedIn();
     }
-
-    // --- Collection Rules ---
 
     match /products/{productId} {
       allow get, list: if true;
       allow create, update, delete: if isAdmin();
     }
 
+    match /suppliers/{supplierId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
     match /users/{userId}/sales/{saleId} {
-      allow get, list: if isOwner(userId);
-      
-      allow create: if isOwner(userId) 
-        && request.resource.data.userId == userId;
-      
-      allow update: if isExistingOwner(userId) 
-        && request.resource.data.userId == resource.data.userId;
-      
-      allow delete: if isExistingOwner(userId);
+      allow get, list: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update, delete: if isAdmin();
 
       match /saleItems/{saleItemId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.saleId == saleId;
-        allow update: if isExistingOwner(userId) && request.resource.data.saleId == resource.data.saleId;
-        allow delete: if isExistingOwner(userId);
+        allow get, list, create, update, delete: if isSignedIn() && request.auth.uid == userId;
       }
     }
 

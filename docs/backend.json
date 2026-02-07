@@ -51,6 +51,10 @@
         "ncm": {
           "type": "string",
           "description": "Nomenclatura Comum do Mercosul (NCM) code for tax classification."
+        },
+        "supplierId": {
+          "type": "string",
+          "description": "Reference to the supplier."
         }
       },
       "required": [
@@ -62,6 +66,44 @@
         "price",
         "quantity",
         "internalCode"
+      ]
+    },
+    "Supplier": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Supplier",
+      "type": "object",
+      "description": "Represents a product supplier.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the supplier.",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string",
+          "description": "Corporate name of the supplier."
+        },
+        "fantasyName": {
+          "type": "string",
+          "description": "Fantasy name of the supplier."
+        },
+        "cnpj": {
+          "type": "string",
+          "description": "CNPJ of the supplier."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email for contact."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone for contact."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "cnpj"
       ]
     },
     "Sale": {
@@ -181,14 +223,16 @@
           "entityName": "Product",
           "schema": {
             "$ref": "#/backend/entities/Product"
-          },
-          "description": "Stores product information.",
-          "params": [
-            {
-              "name": "productId",
-              "description": "Unique identifier for the product (UUID)."
-            }
-          ]
+          }
+        }
+      },
+      {
+        "path": "/suppliers/{supplierId}",
+        "definition": {
+          "entityName": "Supplier",
+          "schema": {
+            "$ref": "#/backend/entities/Supplier"
+          }
         }
       },
       {
@@ -197,61 +241,9 @@
           "entityName": "Sale",
           "schema": {
             "$ref": "#/backend/entities/Sale"
-          },
-          "description": "Stores sale transactions for each user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "Unique identifier for the user."
-            },
-            {
-              "name": "saleId",
-              "description": "Unique identifier for the sale."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/sales/{saleId}/saleItems/{saleItemId}",
-        "definition": {
-          "entityName": "SaleItem",
-          "schema": {
-            "$ref": "#/backend/entities/SaleItem"
-          },
-          "description": "Stores individual items within a sale.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "Unique identifier for the user."
-            },
-            {
-              "name": "saleId",
-              "description": "Unique identifier for the sale."
-            },
-            {
-              "name": "saleItemId",
-              "description": "Unique identifier for the sale item."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/roles_admin/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Collection to indicate admin roles.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "Unique identifier for the user."
-            }
-          ]
+          }
         }
       }
-    ],
-    "reasoning": "Standard corporate management structure focused on generic products and sales tracking."
+    ]
   }
 }
