@@ -4,48 +4,48 @@
 
 @layer base {
   :root {
-    /* Background: Suavizado (Off-White) */
-    --background: 210 20% 98%;
+    /* Background: Escurecido para um tom de cinza-azulado fosco */
+    --background: 210 20% 95%;
     /* Text/Foreground: #0F172A */
     --foreground: 222 47% 11%;
     
-    /* Cards: Com contraste suave contra o background */
-    --card: 0 0% 100%;
+    /* Cards: Levemente mais claros que o fundo para manter contraste com sombras */
+    --card: 210 20% 98%;
     --card-foreground: 222 47% 11%;
     
-    --popover: 0 0% 100%;
+    --popover: 210 20% 98%;
     --popover-foreground: 222 47% 11%;
     
     /* Primary: #2563EB */
     --primary: 221 83% 53%;
     --primary-foreground: 210 40% 98%;
     
-    --secondary: 210 40% 96%;
+    --secondary: 210 20% 92%;
     --secondary-foreground: 222 47% 11%;
     
-    --muted: 210 40% 96%;
+    --muted: 210 20% 92%;
     --muted-foreground: 215 16% 47%;
     
-    --accent: 210 40% 96%;
+    --accent: 210 20% 92%;
     --accent-foreground: 222 47% 11%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+    --border: 214 32% 88%;
+    --input: 214 32% 88%;
     --ring: 221 83% 53%;
     
     --radius: 0.75rem;
 
     /* Sidebar Light */
-    --sidebar-background: 0 0% 100%;
+    --sidebar-background: 210 20% 97%;
     --sidebar-foreground: 222 47% 11%;
     --sidebar-primary: 221 83% 53%;
     --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent: 210 20% 93%;
     --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 32% 91%;
+    --sidebar-border: 214 32% 88%;
     --sidebar-ring: 221 83% 53%;
   }
 
@@ -129,7 +129,7 @@
 .border-status-error { border-color: #DC2626; }
 .border-status-info { border-color: #0284C7; }
 
-/* Custom shadows for depth in light mode */
+/* Sombras proeminentes para destacar elementos no modo claro */
 .shadow-prominent {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.12), 0 10px 15px -8px rgba(0, 0, 0, 0.1);
 }
