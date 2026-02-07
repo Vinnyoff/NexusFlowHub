@@ -12,8 +12,7 @@ import { Plus, Search, Trash2, Loader2, Package } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, doc, deleteDoc } from "firebase/firestore";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, doc, deleteDoc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/app/lib/auth-store";
 
@@ -46,7 +45,7 @@ export default function ProductsPage() {
     p.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  const handleSaveProduct = () => {
+  const handleSaveProduct = async () => {
     if (!newProduct.name || !newProduct.price) {
       toast({ 
         variant: "destructive", 
@@ -81,7 +80,7 @@ export default function ProductsPage() {
 
     try {
       const docRef = doc(firestore, "products", productId);
-      setDocumentNonBlocking(docRef, productData, { merge: true });
+      await setDoc(docRef, productData);
       
       setIsAdding(false);
       setNewProduct({ name: "", brand: "", model: "", price: "", stock: "", size: "M" });
@@ -90,19 +89,23 @@ export default function ProductsPage() {
         title: "Produto Cadastrado", 
         description: `${productData.name} foi adicionado ao estoque.` 
       });
-    } catch (e) {
+    } catch (e: any) {
       toast({ 
         variant: "destructive", 
         title: "Erro ao salvar", 
-        description: "Não foi possível conectar ao banco de dados." 
+        description: e.message || "Não foi possível conectar ao banco de dados." 
       });
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!isAdmin || !firestore) return;
-    deleteDoc(doc(firestore, "products", id));
-    toast({ title: "Removido", description: "Produto excluído do estoque." });
+    try {
+      await deleteDoc(doc(firestore, "products", id));
+      toast({ title: "Removido", description: "Produto excluído do estoque." });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Erro", description: e.message });
+    }
   };
 
   if (!isAdmin) {

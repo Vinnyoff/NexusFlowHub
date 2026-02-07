@@ -74,7 +74,7 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent className="pt-6">
               <div className="h-[300px] w-full">
-                <ChartContainer config={chartConfig} className="h-full w-full">
+                <ChartContainer config={chartConfig}>
                   <BarChart data={salesData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted))" />
                     <XAxis 

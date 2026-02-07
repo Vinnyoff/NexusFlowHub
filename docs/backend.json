@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Product": {
@@ -157,6 +158,7 @@
   "auth": {
     "providers": [
       "password",
+      "google.com",
       "anonymous"
     ]
   },
@@ -239,6 +241,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the features described in the prompt, focusing on a clothing store's product and sales management.  The structure emphasizes security, scalability, and maintainability following the core design principles.  Authorization Independence is achieved through denormalization of user roles where applicable. Structural Segregation ensures that collections contain documents with similar security postures, avoiding complex rule logic. Access Modeling standardizes ownership and collaborative data patterns. This design facilitates straightforward security rules and efficient list operations, addressing QAPs.\n\nProducts are stored in a flat `products` collection.  Sales are stored in user-scoped collections (`/users/{userId}/sales/{saleId}`).  SaleItems are nested under sales, continuing the hierarchical path (`/users/{userId}/sales/{saleId}/saleItems/{saleItemId}`). This structure allows for straightforward querying of sales history and product details. User roles (Admin/Cashier) are determined by the existence of a document in a specific role collection (`roles_admin/{userId}`). This avoids reliance on custom claims and simplifies role-based access control, following the DBAC (Database-Based Access Control) principle. No custom claims are necessary.  This existence-based approach for global roles simplifies security rules and avoids data duplication.\n\nQAPs (Rules are not Filters) are supported through structural segregation and path-based ownership. Listing products is inherently safe as there are no specific role-based filters required. Listing sales is restricted to the specific user's sales.  Sales data integrity is maintained via transactions/batches, ensuring consistency between sales and sale items."
+    "reasoning": "The Firestore data structure is designed to support the features described in the prompt, focusing on a clothing store's product and sales management. Products are stored in a flat products collection. Sales are stored in user-scoped collections (/users/{userId}/sales/{saleId}). SaleItems are nested under sales. User roles (Admin/Cashier) are determined by the existence of a document in a specific role collection (roles_admin/{userId}). Google.com auth is added as a provider."
   }
 }
