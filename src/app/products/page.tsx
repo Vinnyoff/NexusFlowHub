@@ -79,6 +79,7 @@ export default function ProductsPage() {
       barcode: barcode
     };
 
+    // Usando o caminho explícito para garantir estabilidade
     const docRef = doc(firestore, "products", productId);
     setDocumentNonBlocking(docRef, productData, { merge: true });
     
@@ -92,7 +93,7 @@ export default function ProductsPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (!isAdmin) return;
+    if (!isAdmin || !firestore) return;
     deleteDoc(doc(firestore, "products", id));
     toast({ title: "Removido", description: "Produto excluído do estoque." });
   };

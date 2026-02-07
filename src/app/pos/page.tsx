@@ -93,8 +93,8 @@ export default function POSPage() {
     
     try {
       const saleId = crypto.randomUUID();
-      const salesRef = collection(firestore, "users", user.uid, "sales");
-      const saleDocRef = doc(salesRef, saleId);
+      // Usando caminhos explícitos para garantir que a referência do Firestore seja sempre válida
+      const saleDocRef = doc(firestore, "users", user.uid, "sales", saleId);
 
       const saleData = {
         id: saleId,
@@ -110,9 +110,11 @@ export default function POSPage() {
       batch.set(saleDocRef, saleData);
 
       cart.forEach(item => {
-        const itemRef = doc(collection(saleDocRef, "saleItems"));
+        // Referência explícita para cada item da venda
+        const saleItemId = crypto.randomUUID();
+        const itemRef = doc(firestore, "users", user.uid, "sales", saleId, "saleItems", saleItemId);
         batch.set(itemRef, {
-          id: itemRef.id,
+          id: saleItemId,
           saleId: saleId,
           productId: item.id,
           quantity: item.quantity,
@@ -127,12 +129,12 @@ export default function POSPage() {
         title: "Venda Finalizada", 
         description: `Total de R$ ${total.toFixed(2)} registrado via ${paymentMethod}.` 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao finalizar venda:", error);
       toast({ 
         variant: "destructive", 
         title: "Erro ao processar", 
-        description: "Não foi possível registrar a venda no sistema." 
+        description: error.message || "Não foi possível registrar a venda no sistema." 
       });
     } finally {
       setIsProcessing(false);
