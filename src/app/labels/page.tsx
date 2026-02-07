@@ -3,10 +3,10 @@
 
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Printer, Tag, Loader2, Barcode, CheckCircle2 } from "lucide-react";
+import { Search, Printer, Tag, Loader2, Barcode, CheckCircle2, FileText } from "lucide-react";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,8 @@ export default function LabelsPage() {
   ) || [];
 
   const handlePrint = () => {
+    // Dispara a impressão do navegador. 
+    // O usuário pode selecionar "Salvar como PDF" no destino da impressora.
     window.print();
   };
 
@@ -96,6 +98,13 @@ export default function LabelsPage() {
                         </TableCell>
                       </TableRow>
                     ))}
+                    {filteredProducts.length === 0 && !isLoading && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-10 text-muted-foreground">
+                          Nenhum produto encontrado.
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               )}
@@ -122,15 +131,15 @@ export default function LabelsPage() {
                   />
                 </div>
                 
-                <div className="p-4 border border-dashed rounded-xl bg-muted/20 flex flex-col items-center justify-center min-h-[150px]">
+                <div className="p-4 border border-dashed rounded-xl bg-muted/20 flex flex-col items-center justify-center min-h-[180px]">
                   {selectedProduct ? (
-                    <div className="text-center space-y-2">
-                      <p className="text-xs font-bold text-primary uppercase">{selectedProduct.name}</p>
-                      <div className="bg-white p-2 border rounded">
-                        <Barcode className="h-10 w-32 mx-auto text-black" />
+                    <div className="text-center space-y-3">
+                      <p className="text-[10px] font-bold text-primary uppercase tracking-tight">{selectedProduct.name}</p>
+                      <div className="bg-white p-3 border rounded shadow-sm">
+                        <Barcode className="h-12 w-40 mx-auto text-black" />
                         <p className="text-[8px] font-mono text-black mt-1">{selectedProduct.barcode}</p>
                       </div>
-                      <p className="text-sm font-bold">R$ {selectedProduct.price?.toFixed(2)}</p>
+                      <p className="text-lg font-black">R$ {selectedProduct.price?.toFixed(2)}</p>
                     </div>
                   ) : (
                     <div className="text-center text-muted-foreground">
@@ -140,20 +149,27 @@ export default function LabelsPage() {
                   )}
                 </div>
 
-                <Button 
-                  className="w-full h-12 rounded-xl bg-primary hover:bg-accent text-white font-bold gap-2"
-                  disabled={!selectedProduct}
-                  onClick={handlePrint}
-                >
-                  <Printer className="h-5 w-5" /> IMPRIMIR ETIQUETAS
-                </Button>
+                <div className="grid grid-cols-1 gap-2">
+                  <Button 
+                    className="w-full h-12 rounded-xl bg-primary hover:bg-accent text-white font-bold gap-2"
+                    disabled={!selectedProduct}
+                    onClick={handlePrint}
+                  >
+                    <Printer className="h-5 w-5" /> IMPRIMIR / GERAR PDF
+                  </Button>
+                  <p className="text-[9px] text-center text-muted-foreground">
+                    Dica: No menu de impressão, escolha <strong>Salvar como PDF</strong> para gerar o arquivo.
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-muted/50 border-none">
-              <CardContent className="p-4">
+            <Card className="bg-muted/50 border-none shadow-none">
+              <CardContent className="p-4 flex gap-3">
+                <FileText className="h-5 w-5 text-primary shrink-0" />
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  <strong>Dica:</strong> Para melhores resultados em impressoras térmicas, use o formato de etiqueta 40x25mm ou 50x30mm. O sistema gera os códigos automaticamente no padrão EAN-13.
+                  As etiquetas são geradas no formato padrão <strong>50mm x 30mm</strong>. 
+                  Certifique-se de ajustar as margens para "Nenhuma" na visualização de impressão para evitar cortes.
                 </p>
               </CardContent>
             </Card>
@@ -161,18 +177,40 @@ export default function LabelsPage() {
         </div>
       </div>
 
-      {/* Versão de Impressão (Oculta na UI normal) */}
+      {/* Versão de Impressão (Oculta na UI normal via print:hidden e exibida via print:block) */}
       <div className="hidden print:block bg-white p-0 m-0">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media print {
+            @page {
+              size: auto;
+              margin: 0mm;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+            }
+          }
+        `}} />
+        <div className="flex flex-wrap gap-1 p-2 bg-white">
           {Array.from({ length: quantity }).map((_, i) => (
-            <div key={i} className="border border-black p-2 w-[50mm] h-[30mm] flex flex-col items-center justify-between bg-white overflow-hidden mb-2">
-              <p className="text-[10px] font-bold text-black uppercase text-center line-clamp-1">NexusFlow - {selectedProduct?.brand}</p>
-              <p className="text-[9px] text-black text-center font-bold line-clamp-1">{selectedProduct?.name} ({selectedProduct?.size})</p>
-              <div className="flex flex-col items-center">
-                <Barcode className="h-8 w-28 text-black" />
-                <p className="text-[7px] font-mono text-black">{selectedProduct?.barcode}</p>
+            <div 
+              key={i} 
+              className="border border-black p-2 w-[50mm] h-[30mm] flex flex-col items-center justify-between bg-white overflow-hidden"
+              style={{ pageBreakInside: 'avoid' }}
+            >
+              <p className="text-[8px] font-black text-black uppercase text-center line-clamp-1 border-b border-black w-full pb-0.5 mb-1">
+                {selectedProduct?.brand || 'NexusFlow'}
+              </p>
+              <p className="text-[10px] text-black text-center font-bold line-clamp-1">
+                {selectedProduct?.name} {selectedProduct?.size && `(${selectedProduct.size})`}
+              </p>
+              <div className="flex flex-col items-center flex-1 justify-center py-1">
+                <Barcode className="h-10 w-32 text-black" />
+                <p className="text-[8px] font-mono text-black font-bold">{selectedProduct?.barcode}</p>
               </div>
-              <p className="text-[12px] font-black text-black">R$ {selectedProduct?.price?.toFixed(2)}</p>
+              <p className="text-[14px] font-black text-black mt-1">
+                R$ {selectedProduct?.price?.toFixed(2)}
+              </p>
             </div>
           ))}
         </div>
