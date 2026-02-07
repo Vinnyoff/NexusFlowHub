@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset, SidebarRail } from "@/components/ui/sidebar";
 import { Shirt, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon } from "lucide-react";
-import Link from "next/link";
+import Link from "next/navigation";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/lib/auth-store";
 import { Button } from "@/components/ui/button";
@@ -74,10 +74,10 @@ function AppSidebar() {
           {visibleItems.map((item) => (
             <SidebarMenuItem key={item.url}>
               <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title} className="rounded-xl h-11">
-                <Link href={item.url} className="flex items-center gap-3">
+                <a href={item.url} className="flex items-center gap-3">
                   <item.icon className="h-5 w-5" />
                   <span className="font-semibold">{item.title}</span>
-                </Link>
+                </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
@@ -107,18 +107,16 @@ function AppSidebar() {
           <span className="font-bold group-data-[collapsible=icon]:hidden">Sair</span>
         </SidebarMenuButton>
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   );
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <AppSidebar />
       <SidebarInset className="bg-background">
         <header className="flex h-11 items-center px-4 gap-4 sticky top-0 bg-background/60 backdrop-blur-md z-10 border-b border-border/40">
-          <SidebarTrigger />
           <div className="flex items-center gap-2">
             <Shirt className="h-4 w-4 text-primary" />
             <span className="font-headline font-bold text-primary tracking-tight text-sm">FashionFlow</span>
