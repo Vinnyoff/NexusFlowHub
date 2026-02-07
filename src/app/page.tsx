@@ -49,7 +49,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Card className="border-none shadow-2xl bg-card rounded-3xl overflow-hidden">
+        <Card className="border-none shadow-prominent bg-card rounded-3xl overflow-hidden">
           <CardContent className="p-8 pt-10">
             <form onSubmit={handleLogin} className="space-y-5">
               {error && (

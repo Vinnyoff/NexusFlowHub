@@ -4,13 +4,13 @@
 
 @layer base {
   :root {
-    /* Background: #FFFFFF */
-    --background: 0 0% 100%;
+    /* Background: Suavizado (Off-White) */
+    --background: 210 20% 98%;
     /* Text/Foreground: #0F172A */
     --foreground: 222 47% 11%;
     
-    /* Cards: #F8FAFC */
-    --card: 210 40% 98%;
+    /* Cards: Com contraste suave contra o background */
+    --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     
     --popover: 0 0% 100%;
@@ -128,3 +128,8 @@
 .border-status-alert { border-color: #CA8A04; }
 .border-status-error { border-color: #DC2626; }
 .border-status-info { border-color: #0284C7; }
+
+/* Custom shadows for depth in light mode */
+.shadow-prominent {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}

@@ -61,7 +61,7 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <Card className="lg:col-span-2 border border-border shadow-sm overflow-hidden bg-card">
+          <Card className="lg:col-span-2 border border-border shadow-prominent overflow-hidden bg-card">
             <CardHeader className="bg-muted/30 border-b border-border">
               <CardTitle className="font-headline text-xl text-foreground">Fluxo Operacional Recente</CardTitle>
             </CardHeader>
@@ -85,7 +85,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border border-border shadow-sm bg-card">
+          <Card className="border border-border shadow-prominent bg-card">
             <CardHeader>
               <CardTitle className="font-headline text-xl text-center text-foreground">Acesso Rápido</CardTitle>
             </CardHeader>
@@ -104,7 +104,7 @@ export default function Dashboard() {
 
 function StatCard({ title, value, icon: Icon, trend, color, bgColor }: any) {
   return (
-    <Card className="border border-border shadow-sm overflow-hidden transition-all hover:shadow-md bg-card">
+    <Card className="border border-border shadow-prominent overflow-hidden transition-all hover:translate-y-[-2px] hover:shadow-xl bg-card">
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div className={`${bgColor} ${color} p-3 rounded-xl`}>
@@ -123,7 +123,7 @@ function StatCard({ title, value, icon: Icon, trend, color, bgColor }: any) {
 
 function QuickAction({ icon: Icon, label, href }: any) {
   return (
-    <Link href={href} className="flex items-center gap-3 p-4 border border-border rounded-xl hover:bg-primary hover:text-primary-foreground transition-all group">
+    <Link href={href} className="flex items-center gap-3 p-4 border border-border rounded-xl hover:bg-primary hover:text-primary-foreground transition-all group hover:shadow-lg">
       <Icon className="h-5 w-5 text-primary group-hover:text-primary-foreground transition-colors" />
       <span className="text-sm font-bold">{label}</span>
     </Link>

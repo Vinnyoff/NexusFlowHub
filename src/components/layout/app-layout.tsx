@@ -59,7 +59,7 @@ function AppSidebar() {
   const visibleItems = menuItems.filter(item => item.roles.includes(role || "CASHIER"));
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border bg-card shadow-2xl">
+    <Sidebar collapsible="icon" className="border-r border-border bg-card shadow-xl">
       <SidebarHeader className="p-4 flex items-center justify-center overflow-hidden">
         <div className="bg-primary/10 p-2 rounded-xl text-primary shrink-0">
           <LayoutGrid className="h-6 w-6" />
@@ -105,7 +105,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider defaultOpen={false}>
       <AppSidebar />
       <SidebarInset className="bg-background">
-        <header className="flex h-14 items-center px-6 gap-4 sticky top-0 bg-card border-b border-border z-10 shadow-sm">
+        <header className="flex h-14 items-center px-6 gap-4 sticky top-0 bg-card border-b border-border z-10 shadow-md">
           <div className="flex items-center gap-2">
             <LayoutGrid className="h-5 w-5 text-primary" />
             <span className="font-headline font-bold text-foreground tracking-tight text-lg">NexusFlow</span>
