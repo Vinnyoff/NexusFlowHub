@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar as CalendarIcon, Filter, Eye, Download, Loader2, Package, Trash2, AlertTriangle, CalendarDays, ChevronDown, ChevronUp, PlusCircle, CreditCard, Banknote, QrCode } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Filter, Eye, Download, Loader2, Package, Trash2, AlertTriangle, CalendarDays, ChevronDown, ChevronUp, PlusCircle, CreditCard, Banknote, QrCode, ListFilter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, where, writeBatch, doc } from "firebase/firestore";
@@ -160,7 +160,7 @@ export default function SalesHistory() {
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
           <div className="relative md:col-span-5">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
             <Input 
               placeholder="Buscar por ID ou produto..." 
               className="pl-10 h-12 rounded-xl shadow-sm border-muted"
@@ -183,7 +183,7 @@ export default function SalesHistory() {
             </Select>
           </div>
           <div className="relative md:col-span-3">
-            <CalendarIcon className="absolute left-3 top-3 h-4 w-4 text-primary" />
+            <CalendarIcon className="absolute left-3 top-3.5 h-4 w-4 text-primary" />
             <Input 
               type="date" 
               className="pl-10 h-12 rounded-xl border-primary/20 bg-primary/5 font-bold focus-visible:ring-primary shadow-sm"
@@ -258,23 +258,11 @@ export default function SalesHistory() {
                               );
                             })}
 
-                            {totalItems > 1 && (
-                              <div className="pt-2 px-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={() => toggleSaleExpansion(sale.id)}
-                                  className={cn(
-                                    "h-8 text-[10px] font-black uppercase tracking-widest gap-2 rounded-lg transition-all",
-                                    isExpanded ? "text-muted-foreground" : "text-primary bg-primary/5 hover:bg-primary/10"
-                                  )}
-                                >
-                                  {isExpanded ? (
-                                    <>Ocultar detalhes <ChevronUp className="h-3 w-3" /></>
-                                  ) : (
-                                    <>Ver mais ({totalItems - 1}) produtos <ChevronDown className="h-3 w-3" /></>
-                                  )}
-                                </Button>
+                            {!isExpanded && totalItems > 1 && (
+                              <div className="pl-2">
+                                <span className="text-[10px] text-muted-foreground italic font-medium">
+                                  + {totalItems - 1} outros produtos neste lote...
+                                </span>
                               </div>
                             )}
                           </div>
@@ -297,9 +285,30 @@ export default function SalesHistory() {
                           R$ {(Number(sale.totalAmount) || 0).toFixed(2)}
                         </TableCell>
                         <TableCell className="text-right pr-6">
-                          <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl text-primary hover:bg-primary/10">
-                            <Eye className="h-5 w-5" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            {totalItems > 1 && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => toggleSaleExpansion(sale.id)}
+                                className={cn(
+                                  "h-9 px-4 text-[10px] font-black uppercase tracking-widest gap-2 rounded-xl transition-all shadow-sm",
+                                  isExpanded 
+                                    ? "bg-muted text-muted-foreground border-muted" 
+                                    : "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10"
+                                )}
+                              >
+                                {isExpanded ? (
+                                  <><ChevronUp className="h-3.5 w-3.5" /> Recolher</>
+                                ) : (
+                                  <><ChevronDown className="h-3.5 w-3.5" /> Ver Itens ({totalItems})</>
+                                )}
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" className="h-9 w-9 p-0 rounded-xl text-primary hover:bg-primary/10">
+                              <Eye className="h-5 w-5" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
