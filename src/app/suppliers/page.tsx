@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Trash2, Loader2, Building2, Pencil, Phone, Mail, MapPin, SearchCode, Home, Navigation, Map } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Building2, Pencil, Phone, Mail, MapPin, SearchCode } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
@@ -22,6 +22,8 @@ export default function SuppliersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isFetchingCnpj, setIsFetchingCnpj] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [lastConsultedCnpj, setLastConsultedCnpj] = useState("");
+  
   const [formData, setFormData] = useState({
     name: "",
     fantasyName: "",
@@ -54,37 +56,16 @@ export default function SuppliersPage() {
     s.cnpj?.includes(searchTerm)
   ) || [];
 
-  const handleEdit = (supplier: any) => {
-    setEditingId(supplier.id);
-    setFormData({
-      name: supplier.name || "",
-      fantasyName: supplier.fantasyName || "",
-      cnpj: supplier.cnpj || "",
-      email: supplier.email || "",
-      phone: supplier.phone || "",
-      street: supplier.street || "",
-      number: supplier.number || "",
-      complement: supplier.complement || "",
-      neighborhood: supplier.neighborhood || "",
-      city: supplier.city || "",
-      state: supplier.state || "",
-      zip: supplier.zip || ""
-    });
-    setIsDialogOpen(true);
-  };
-
-  const fetchCnpjData = async () => {
-    const cleanCnpj = formData.cnpj.replace(/\D/g, "");
-    if (cleanCnpj.length !== 14) {
-      toast({
-        variant: "destructive",
-        title: "CNPJ Inválido",
-        description: "O CNPJ deve conter 14 dígitos para consulta."
-      });
-      return;
-    }
+  const fetchCnpjData = useCallback(async (cnpjToFetch?: string) => {
+    const cnpj = cnpjToFetch || formData.cnpj;
+    const cleanCnpj = cnpj.replace(/\D/g, "");
+    
+    if (cleanCnpj.length !== 14) return;
+    if (cleanCnpj === lastConsultedCnpj) return;
 
     setIsFetchingCnpj(true);
+    setLastConsultedCnpj(cleanCnpj);
+    
     try {
       const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
       if (!response.ok) throw new Error("Não foi possível localizar o CNPJ.");
@@ -108,17 +89,46 @@ export default function SuppliersPage() {
 
       toast({
         title: "Dados Recuperados",
-        description: "Informações do fornecedor preenchidas com sucesso."
+        description: "Informações do fornecedor preenchidas automaticamente."
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erro na Consulta",
-        description: error.message || "Falha ao consultar CNPJ."
+        title: "Consulta Automática",
+        description: "Não foi possível carregar os dados deste CNPJ automaticamente."
       });
     } finally {
       setIsFetchingCnpj(false);
     }
+  }, [formData.cnpj, lastConsultedCnpj, toast]);
+
+  // Efeito para disparar a consulta automática ao atingir 14 dígitos
+  useEffect(() => {
+    const cleanCnpj = formData.cnpj.replace(/\D/g, "");
+    if (cleanCnpj.length === 14 && !isFetchingCnpj && cleanCnpj !== lastConsultedCnpj) {
+      fetchCnpjData(cleanCnpj);
+    }
+  }, [formData.cnpj, isFetchingCnpj, lastConsultedCnpj, fetchCnpjData]);
+
+  const handleEdit = (supplier: any) => {
+    setEditingId(supplier.id);
+    const cleanCnpj = (supplier.cnpj || "").replace(/\D/g, "");
+    setLastConsultedCnpj(cleanCnpj);
+    setFormData({
+      name: supplier.name || "",
+      fantasyName: supplier.fantasyName || "",
+      cnpj: supplier.cnpj || "",
+      email: supplier.email || "",
+      phone: supplier.phone || "",
+      street: supplier.street || "",
+      number: supplier.number || "",
+      complement: supplier.complement || "",
+      neighborhood: supplier.neighborhood || "",
+      city: supplier.city || "",
+      state: supplier.state || "",
+      zip: supplier.zip || ""
+    });
+    setIsDialogOpen(true);
   };
 
   const handleSaveSupplier = () => {
@@ -131,7 +141,6 @@ export default function SuppliersPage() {
       return;
     }
 
-    // Formata o endereço completo para visualização rápida na tabela
     const fullAddress = `${formData.street}, ${formData.number}${formData.complement ? ' - ' + formData.complement : ''}, ${formData.neighborhood}, ${formData.city} - ${formData.state}, CEP: ${formData.zip}`;
 
     const supplierData: any = {
@@ -167,6 +176,7 @@ export default function SuppliersPage() {
 
   const resetForm = () => {
     setEditingId(null);
+    setLastConsultedCnpj("");
     setFormData({ 
       name: "", 
       fantasyName: "", 
@@ -218,25 +228,30 @@ export default function SuppliersPage() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 py-6">
                 <div className="space-y-2 md:col-span-2">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">CNPJ do Fornecedor</Label>
-                  <div className="flex gap-2">
+                  <div className="flex items-center justify-between pl-1">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">CNPJ do Fornecedor</Label>
+                    {isFetchingCnpj && (
+                      <span className="flex items-center gap-1.5 text-[9px] font-bold text-primary animate-pulse">
+                        <Loader2 className="h-3 w-3 animate-spin" /> CONSULTANDO...
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
                     <Input 
                       placeholder="00.000.000/0000-00" 
                       value={formData.cnpj}
                       onChange={e => setFormData({...formData, cnpj: e.target.value})}
-                      className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20 font-mono"
+                      className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20 font-mono pr-12"
                     />
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={fetchCnpjData}
-                      disabled={isFetchingCnpj}
-                      className="h-12 px-4 rounded-xl gap-2 border-primary/20 hover:bg-primary/5 text-primary shrink-0"
-                    >
-                      {isFetchingCnpj ? <Loader2 className="h-4 w-4 animate-spin" /> : <SearchCode className="h-4 w-4" />}
-                      {isFetchingCnpj ? "Consultando..." : "Consultar"}
-                    </Button>
+                    <div className="absolute right-3 top-3.5">
+                      {isFetchingCnpj ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      ) : (
+                        <SearchCode className="h-5 w-5 text-muted-foreground opacity-30" />
+                      )}
+                    </div>
                   </div>
+                  <p className="text-[9px] text-muted-foreground italic px-1">A consulta é realizada automaticamente ao terminar de digitar.</p>
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
@@ -358,7 +373,7 @@ export default function SuppliersPage() {
 
               <DialogFooter className="border-t border-border/50 pt-5 mt-2">
                 <Button type="button" variant="ghost" className="rounded-xl h-11 px-6" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-                <Button type="button" className="rounded-xl h-11 px-8 bg-primary hover:bg-accent shadow-lg shadow-primary/20 font-bold" onClick={handleSaveSupplier}>
+                <Button type="button" className="rounded-xl h-11 px-8 bg-primary hover:bg-accent shadow-lg shadow-primary/20 font-bold" onClick={handleSaveSupplier} disabled={isFetchingCnpj}>
                   {editingId ? "Salvar Alterações" : "Concluir Cadastro"}
                 </Button>
               </DialogFooter>
