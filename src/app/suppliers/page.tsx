@@ -6,10 +6,9 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Trash2, Loader2, Building2, Pencil, Phone, Mail, FileText, MapPin, SearchCode } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Building2, Pencil, Phone, Mail, MapPin, SearchCode, Home, Navigation, Map } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
@@ -29,7 +28,13 @@ export default function SuppliersPage() {
     cnpj: "",
     email: "",
     phone: "",
-    address: ""
+    street: "",
+    number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+    zip: ""
   });
   
   const firestore = useFirestore();
@@ -57,7 +62,13 @@ export default function SuppliersPage() {
       cnpj: supplier.cnpj || "",
       email: supplier.email || "",
       phone: supplier.phone || "",
-      address: supplier.address || ""
+      street: supplier.street || "",
+      number: supplier.number || "",
+      complement: supplier.complement || "",
+      neighborhood: supplier.neighborhood || "",
+      city: supplier.city || "",
+      state: supplier.state || "",
+      zip: supplier.zip || ""
     });
     setIsDialogOpen(true);
   };
@@ -80,15 +91,19 @@ export default function SuppliersPage() {
       
       const data = await response.json();
       
-      const fullAddress = `${data.logradouro}, ${data.numero}${data.complemento ? ' - ' + data.complemento : ''}, ${data.bairro}, ${data.municipio} - ${data.uf}, CEP: ${data.cep}`;
-      
       setFormData(prev => ({
         ...prev,
         name: data.razao_social || prev.name,
         fantasyName: data.nome_fantasia || prev.fantasyName,
         phone: data.ddd_telefone_1 || prev.phone,
         email: data.email || prev.email,
-        address: fullAddress
+        street: data.logradouro || "",
+        number: data.numero || "",
+        complement: data.complemento || "",
+        neighborhood: data.bairro || "",
+        city: data.municipio || "",
+        state: data.uf || "",
+        zip: data.cep || ""
       }));
 
       toast({
@@ -116,13 +131,23 @@ export default function SuppliersPage() {
       return;
     }
 
+    // Formata o endereço completo para visualização rápida na tabela
+    const fullAddress = `${formData.street}, ${formData.number}${formData.complement ? ' - ' + formData.complement : ''}, ${formData.neighborhood}, ${formData.city} - ${formData.state}, CEP: ${formData.zip}`;
+
     const supplierData: any = {
       name: formData.name,
       fantasyName: formData.fantasyName,
       cnpj: formData.cnpj,
       email: formData.email,
       phone: formData.phone,
-      address: formData.address
+      street: formData.street,
+      number: formData.number,
+      complement: formData.complement,
+      neighborhood: formData.neighborhood,
+      city: formData.city,
+      state: formData.state,
+      zip: formData.zip,
+      address: fullAddress
     };
 
     if (editingId) {
@@ -142,7 +167,20 @@ export default function SuppliersPage() {
 
   const resetForm = () => {
     setEditingId(null);
-    setFormData({ name: "", fantasyName: "", cnpj: "", email: "", phone: "", address: "" });
+    setFormData({ 
+      name: "", 
+      fantasyName: "", 
+      cnpj: "", 
+      email: "", 
+      phone: "", 
+      street: "", 
+      number: "", 
+      complement: "", 
+      neighborhood: "", 
+      city: "", 
+      state: "", 
+      zip: "" 
+    });
   };
 
   const handleDelete = (id: string) => {
@@ -171,15 +209,15 @@ export default function SuppliersPage() {
                 Cadastrar Fornecedor
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px] rounded-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[650px] rounded-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-headline text-2xl text-primary">
                   {editingId ? "Editar Fornecedor" : "Novo Cadastro"}
                 </DialogTitle>
               </DialogHeader>
               
-              <div className="grid grid-cols-1 gap-5 py-6">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 py-6">
+                <div className="space-y-2 md:col-span-2">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">CNPJ do Fornecedor</Label>
                   <div className="flex gap-2">
                     <Input 
@@ -201,7 +239,7 @@ export default function SuppliersPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Razão Social</Label>
                   <Input 
                     placeholder="Nexus Suprimentos LTDA" 
@@ -211,7 +249,7 @@ export default function SuppliersPage() {
                   />
                 </div>
                 
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Nome Fantasia</Label>
                   <Input 
                     placeholder="Nexus Distribuidora" 
@@ -221,35 +259,99 @@ export default function SuppliersPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Telefone</Label>
-                    <Input 
-                      placeholder="(00) 0000-0000" 
-                      value={formData.phone}
-                      onChange={e => setFormData({...formData, phone: e.target.value})}
-                      className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">E-mail</Label>
-                    <Input 
-                      type="email"
-                      placeholder="contato@fornecedor.com" 
-                      value={formData.email}
-                      onChange={e => setFormData({...formData, email: e.target.value})}
-                      className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Telefone</Label>
+                  <Input 
+                    placeholder="(00) 0000-0000" 
+                    value={formData.phone}
+                    onChange={e => setFormData({...formData, phone: e.target.value})}
+                    className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">E-mail</Label>
+                  <Input 
+                    type="email"
+                    placeholder="contato@fornecedor.com" 
+                    value={formData.email}
+                    onChange={e => setFormData({...formData, email: e.target.value})}
+                    className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
+                  />
+                </div>
+
+                <div className="border-t pt-4 md:col-span-2 flex items-center gap-2 mb-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span className="text-[10px] font-black uppercase text-primary tracking-[0.2em]">Localização</span>
+                </div>
+
+                <div className="space-y-2 md:col-span-1">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">CEP</Label>
+                  <Input 
+                    placeholder="00000-000" 
+                    value={formData.zip}
+                    onChange={e => setFormData({...formData, zip: e.target.value})}
+                    className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20 font-mono"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-1">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">UF (Estado)</Label>
+                  <Input 
+                    placeholder="EX: SP" 
+                    value={formData.state}
+                    onChange={e => setFormData({...formData, state: e.target.value.toUpperCase().substring(0, 2)})}
+                    className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
+                    maxLength={2}
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Logradouro (Rua)</Label>
+                  <Input 
+                    placeholder="Avenida Paulista" 
+                    value={formData.street}
+                    onChange={e => setFormData({...formData, street: e.target.value})}
+                    className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Endereço Completo</Label>
-                  <Textarea 
-                    placeholder="Rua, Número, Bairro, Cidade - UF, CEP" 
-                    value={formData.address}
-                    onChange={e => setFormData({...formData, address: e.target.value})}
-                    className="rounded-xl border-primary/10 min-h-[80px] text-sm bg-muted/20 resize-none"
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Número</Label>
+                  <Input 
+                    placeholder="123" 
+                    value={formData.number}
+                    onChange={e => setFormData({...formData, number: e.target.value})}
+                    className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Complemento</Label>
+                  <Input 
+                    placeholder="Sala 101" 
+                    value={formData.complement}
+                    onChange={e => setFormData({...formData, complement: e.target.value})}
+                    className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Bairro</Label>
+                  <Input 
+                    placeholder="Centro" 
+                    value={formData.neighborhood}
+                    onChange={e => setFormData({...formData, neighborhood: e.target.value})}
+                    className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Cidade</Label>
+                  <Input 
+                    placeholder="São Paulo" 
+                    value={formData.city}
+                    onChange={e => setFormData({...formData, city: e.target.value})}
+                    className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
                   />
                 </div>
               </div>
@@ -310,7 +412,7 @@ export default function SuppliersPage() {
                         <div className="flex items-start gap-2">
                           <MapPin className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
                           <span className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
-                            {supplier.address || 'Endereço não informado'}
+                            {supplier.address || `${supplier.city} - ${supplier.state}`}
                           </span>
                         </div>
                       </TableCell>

@@ -99,9 +99,37 @@
           "type": "string",
           "description": "Phone for contact."
         },
+        "street": {
+          "type": "string",
+          "description": "Street name."
+        },
+        "number": {
+          "type": "string",
+          "description": "Address number."
+        },
+        "complement": {
+          "type": "string",
+          "description": "Address complement."
+        },
+        "neighborhood": {
+          "type": "string",
+          "description": "Neighborhood."
+        },
+        "city": {
+          "type": "string",
+          "description": "City."
+        },
+        "state": {
+          "type": "string",
+          "description": "State (UF)."
+        },
+        "zip": {
+          "type": "string",
+          "description": "ZIP code (CEP)."
+        },
         "address": {
           "type": "string",
-          "description": "Full address of the supplier."
+          "description": "Full formatted address for display."
         }
       },
       "required": [
