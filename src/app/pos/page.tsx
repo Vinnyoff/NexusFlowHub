@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ShoppingCart, Barcode, Trash2, CheckCircle2, CreditCard, Banknote, QrCode, Loader2, Plus, Minus, ScanBarcode } from "lucide-react";
+import { ShoppingCart, Barcode, Trash2, CheckCircle2, CreditCard, Banknote, QrCode, Loader2, Plus, Minus, ScanBarcode, Wallet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { Label } from "@/components/ui/label";
 
 interface CartItem {
   id: string;
@@ -28,6 +29,7 @@ export default function POSPage() {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<"CARD" | "CASH" | "PIX">("CARD");
+  const [amountReceived, setAmountReceived] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   
   const { toast } = useToast();
@@ -102,6 +104,9 @@ export default function POSPage() {
 
   const total = cart.reduce((acc, item) => acc + ((Number(item.price) || 0) * (Number(item.quantity) || 0)), 0);
 
+  const receivedNum = parseFloat(amountReceived.replace(',', '.')) || 0;
+  const changeAmount = receivedNum > total ? receivedNum - total : 0;
+
   const finalizeSale = async () => {
     if (cart.length === 0 || !user || !firestore) return;
 
@@ -158,6 +163,7 @@ export default function POSPage() {
       await batch.commit();
 
       setCart([]);
+      setAmountReceived("");
       toast({ 
         title: "Venda Finalizada", 
         description: `Total de R$ ${total.toFixed(2)} registrado e estoque atualizado.` 
@@ -267,41 +273,106 @@ export default function POSPage() {
         </div>
 
         <div className="space-y-6">
-          <Card className="border-none shadow-lg bg-primary text-white">
-            <CardHeader>
-              <CardTitle className="font-headline text-center text-xl">Resumo do Pagamento</CardTitle>
+          <Card className="border-none shadow-lg bg-primary text-white overflow-hidden">
+            <CardHeader className="bg-primary-foreground/5 py-4 border-b border-white/10">
+              <CardTitle className="font-headline text-center text-lg">Resumo do Pagamento</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between text-lg opacity-80">
-                <span>Subtotal</span>
-                <span>R$ {total.toFixed(2)}</span>
-              </div>
-              <div className="border-t border-white/20 pt-4 flex justify-between text-3xl font-bold">
-                <span>TOTAL</span>
-                <span>R$ {total.toFixed(2)}</span>
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <div className="grid grid-cols-3 gap-2 w-full">
-                <Button variant="outline" onClick={() => setPaymentMethod("CARD")} className={`bg-transparent border-white/40 text-white hover:bg-white/20 flex flex-col h-16 gap-1 ${paymentMethod === "CARD" ? "bg-white/20 border-white ring-2 ring-white/50" : ""}`}>
-                  <CreditCard className="h-5 w-5" />
-                  <span className="text-[10px] font-bold">Cartão</span>
-                </Button>
-                <Button variant="outline" onClick={() => setPaymentMethod("CASH")} className={`bg-transparent border-white/40 text-white hover:bg-white/20 flex flex-col h-16 gap-1 ${paymentMethod === "CASH" ? "bg-white/20 border-white ring-2 ring-white/50" : ""}`}>
-                  <Banknote className="h-5 w-5" />
-                  <span className="text-[10px] font-bold">Dinheiro</span>
-                </Button>
-                <Button variant="outline" onClick={() => setPaymentMethod("PIX")} className={`bg-transparent border-white/40 text-white hover:bg-white/20 flex flex-col h-16 gap-1 ${paymentMethod === "PIX" ? "bg-white/20 border-white ring-2 ring-white/50" : ""}`}>
-                  <QrCode className="h-5 w-5" />
-                  <span className="text-[10px] font-bold">Pix</span>
-                </Button>
+            <CardContent className="space-y-6 pt-6">
+              <div className="space-y-2">
+                <div className="flex justify-between text-base opacity-80">
+                  <span>Itens no Carrinho</span>
+                  <span>{cart.length}</span>
+                </div>
+                <div className="flex justify-between text-base opacity-80">
+                  <span>Subtotal</span>
+                  <span>R$ {total.toFixed(2)}</span>
+                </div>
+                <div className="border-t border-white/20 pt-4 flex justify-between text-4xl font-black">
+                  <span>TOTAL</span>
+                  <span>R$ {total.toFixed(2)}</span>
+                </div>
               </div>
 
-              <Button onClick={finalizeSale} className="w-full bg-white text-primary hover:bg-white/90 text-lg font-bold h-14" disabled={cart.length === 0 || isProcessing}>
+              <div className="space-y-3">
+                <Label className="text-[10px] font-bold uppercase tracking-widest text-white/70 pl-1">Forma de Pagamento</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setPaymentMethod("CARD")} 
+                    className={`bg-white/10 border-white/20 text-white hover:bg-white/20 flex flex-col h-16 gap-1 p-2 ${paymentMethod === "CARD" ? "bg-white/30 border-white ring-2 ring-white/50" : ""}`}
+                  >
+                    <CreditCard className="h-5 w-5" />
+                    <span className="text-[10px] font-bold">Cartão</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setPaymentMethod("CASH")} 
+                    className={`bg-white/10 border-white/20 text-white hover:bg-white/20 flex flex-col h-16 gap-1 p-2 ${paymentMethod === "CASH" ? "bg-white/30 border-white ring-2 ring-white/50" : ""}`}
+                  >
+                    <Banknote className="h-5 w-5" />
+                    <span className="text-[10px] font-bold">Dinheiro</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setPaymentMethod("PIX")} 
+                    className={`bg-white/10 border-white/20 text-white hover:bg-white/20 flex flex-col h-16 gap-1 p-2 ${paymentMethod === "PIX" ? "bg-white/30 border-white ring-2 ring-white/50" : ""}`}
+                  >
+                    <QrCode className="h-5 w-5" />
+                    <span className="text-[10px] font-bold">Pix</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Janela Minimalista de Troco */}
+              {paymentMethod === "CASH" && (
+                <div className="bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-white/10 space-y-4 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center gap-2 text-white/90">
+                    <Wallet className="h-4 w-4" />
+                    <h4 className="text-xs font-bold uppercase tracking-widest">Calculadora de Troco</h4>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[9px] font-bold uppercase text-white/60">Valor Recebido (R$)</Label>
+                      <Input 
+                        type="number"
+                        placeholder="0,00"
+                        value={amountReceived}
+                        onChange={(e) => setAmountReceived(e.target.value)}
+                        className="bg-white/10 border-white/20 text-white h-10 text-lg font-bold placeholder:text-white/20 focus-visible:ring-white/40"
+                      />
+                    </div>
+                    
+                    <div className="flex justify-between items-end p-3 bg-white/10 rounded-xl border border-white/5">
+                      <span className="text-[10px] font-bold uppercase text-white/60">Troco a devolver:</span>
+                      <span className={`text-2xl font-black ${changeAmount > 0 ? "text-emerald-300" : "text-white/40"}`}>
+                        R$ {changeAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+            
+            <CardFooter className="p-6 pt-0">
+              <Button 
+                onClick={finalizeSale} 
+                className="w-full bg-white text-primary hover:bg-white/90 text-lg font-black h-16 rounded-2xl shadow-xl shadow-black/20" 
+                disabled={cart.length === 0 || isProcessing}
+              >
                 {isProcessing ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <CheckCircle2 className="mr-2 h-6 w-6" />}
                 FINALIZAR VENDA
               </Button>
             </CardFooter>
+          </Card>
+
+          <Card className="border-none shadow-sm bg-muted/30">
+            <CardContent className="p-4 flex gap-3 items-start">
+              <ScanBarcode className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Mantenha o foco no campo de leitura acima para processar os itens rapidamente. Use <strong>ENTER</strong> para confirmar cada adição.
+              </p>
+            </CardContent>
           </Card>
         </div>
       </div>
