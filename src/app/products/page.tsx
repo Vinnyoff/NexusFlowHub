@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Trash2, Loader2, Package, Layers, Barcode, Sparkles, Pencil } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Package, Layers, Barcode as BarcodeIcon, Sparkles, Pencil } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -51,23 +51,25 @@ export default function ProductsPage() {
     p.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  const calculateEAN13CheckDigit = (code: string) => {
+  const calculateEAN8CheckDigit = (code: string) => {
+    // EAN-8 logic: weight 3, 1, 3, 1, 3, 1, 3
     let sum = 0;
-    for (let i = 0; i < 12; i++) {
-      sum += parseInt(code[i]) * (i % 2 === 0 ? 1 : 3);
+    const weights = [3, 1, 3, 1, 3, 1, 3];
+    for (let i = 0; i < 7; i++) {
+      sum += parseInt(code[i]) * weights[i];
     }
     const remainder = sum % 10;
     return remainder === 0 ? 0 : 10 - remainder;
   };
 
   const handleGenerateBarcode = () => {
-    // Gera base de 12 dígitos (prefixo 789 + 9 dígitos aleatórios)
-    const base = `789${Math.floor(100000000 + Math.random() * 900000000)}`;
-    const checkDigit = calculateEAN13CheckDigit(base);
+    // Gera base de 7 dígitos aleatórios para EAN-8 interno
+    const base = `${Math.floor(1000000 + Math.random() * 9000000)}`;
+    const checkDigit = calculateEAN8CheckDigit(base);
     const fullCode = base + checkDigit;
     
     setFormData({ ...formData, barcode: fullCode });
-    toast({ title: "Código Gerado", description: `EAN-13 válido atribuído: ${fullCode}` });
+    toast({ title: "Código Interno Gerado", description: `EAN-8 gerado: ${fullCode}` });
   };
 
   const handleEdit = (product: any) => {
@@ -105,6 +107,13 @@ export default function ProductsPage() {
       return;
     }
 
+    // Se não houver código de barras, gera um EAN-8 automático
+    let finalBarcode = formData.barcode;
+    if (!finalBarcode) {
+      const base = `${Math.floor(1000000 + Math.random() * 9000000)}`;
+      finalBarcode = base + calculateEAN8CheckDigit(base);
+    }
+
     const productData: any = {
       name: formData.name,
       brand: formData.brand,
@@ -113,7 +122,7 @@ export default function ProductsPage() {
       size: formData.variant,
       price: parseFloat(formData.price) || 0,
       quantity: parseInt(formData.stock) || 0,
-      barcode: formData.barcode || `NX-${Math.floor(1000 + Math.random() * 8999)}`
+      barcode: finalBarcode
     };
 
     if (editingId) {
@@ -129,7 +138,7 @@ export default function ProductsPage() {
       setDocumentNonBlocking(docRef, { ...productData, id: productId }, { merge: true });
       toast({ 
         title: "Item Registrado", 
-        description: `${productData.name} foi adicionado ao inventário.` 
+        description: `${productData.name} foi adicionado ao inventário com código ${finalBarcode}.` 
       });
     }
     
@@ -267,15 +276,16 @@ export default function ProductsPage() {
 
                   <TabsContent value="detalhes" className="col-span-2 m-0 grid grid-cols-2 gap-4">
                     <div className="space-y-1.5 col-span-2">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Código de Barras (Manual ou Leitor)</Label>
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Código de Barras (EAN-8 Interno)</Label>
                       <div className="flex gap-2">
                         <div className="relative flex-1">
-                          <Barcode className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                          <BarcodeIcon className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                           <Input 
                             placeholder="Aguardando leitura ou digitação..." 
                             value={formData.barcode}
                             onChange={e => setFormData({...formData, barcode: e.target.value})}
                             className="rounded-xl border-primary/10 h-11 pl-10 text-sm bg-muted/20"
+                            maxLength={8}
                           />
                         </div>
                         <Button 
@@ -285,7 +295,7 @@ export default function ProductsPage() {
                           onClick={handleGenerateBarcode}
                         >
                           <Sparkles className="h-4 w-4 text-primary" />
-                          Gerar EAN
+                          Gerar EAN-8
                         </Button>
                       </div>
                     </div>
@@ -356,7 +366,7 @@ export default function ProductsPage() {
                     <TableRow key={product.id} className="group hover:bg-muted/50 transition-colors">
                       <TableCell className="pl-6 font-semibold text-primary">
                         {product.name}
-                        <div className="text-[10px] text-muted-foreground font-mono mt-1">EAN: {product.barcode}</div>
+                        <div className="text-[10px] text-muted-foreground font-mono mt-1">EAN-8: {product.barcode}</div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="rounded-md font-bold text-[10px] uppercase">{product.category || "Geral"}</Badge>

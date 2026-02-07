@@ -42,7 +42,7 @@ export default function LabelsPage() {
       <div className="space-y-6 print:hidden">
         <div>
           <h1 className="text-3xl font-headline font-bold text-primary">Emissão de Etiquetas</h1>
-          <p className="text-muted-foreground">Gere identificação física para seus produtos com código de barras.</p>
+          <p className="text-muted-foreground">Gere identificação física para seus produtos com código EAN-8 interno.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -78,7 +78,7 @@ export default function LabelsPage() {
                       <TableRow key={product.id} className={selectedProduct?.id === product.id ? "bg-primary/5" : ""}>
                         <TableCell className="pl-6 font-semibold">
                           {product.name}
-                          <div className="text-[10px] text-muted-foreground font-mono">CODE: {product.barcode}</div>
+                          <div className="text-[10px] text-muted-foreground font-mono">EAN-8: {product.barcode}</div>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-[10px] uppercase font-bold">{product.brand}</Badge>
@@ -138,7 +138,8 @@ export default function LabelsPage() {
                       <div className="bg-white p-2 border rounded shadow-sm scale-90 origin-center">
                         <Barcode 
                           value={selectedProduct.barcode} 
-                          width={1.2} 
+                          format="EAN8"
+                          width={1.5} 
                           height={50} 
                           fontSize={12}
                           background="#ffffff"
@@ -163,7 +164,7 @@ export default function LabelsPage() {
                     <Printer className="h-5 w-5" /> IMPRIMIR / GERAR PDF
                   </Button>
                   <p className="text-[9px] text-center text-muted-foreground">
-                    Dica: No menu de impressão, escolha <strong>Salvar como PDF</strong> para gerar o arquivo.
+                    Formato EAN-8 habilitado para códigos internos.
                   </p>
                 </div>
               </CardContent>
@@ -173,7 +174,7 @@ export default function LabelsPage() {
               <CardContent className="p-4 flex gap-3">
                 <FileText className="h-5 w-5 text-primary shrink-0" />
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  As etiquetas exibem agora a <strong>Identificação de Marca</strong> e <strong>Modelo</strong> para melhor organização física.
+                  As etiquetas utilizam agora o padrão <strong>EAN-8</strong> para melhor compatibilidade com códigos internos reduzidos.
                 </p>
               </CardContent>
             </Card>
@@ -217,11 +218,12 @@ export default function LabelsPage() {
                 </p>
               </div>
 
-              {/* Código de Barras Real */}
+              {/* Código de Barras Real EAN-8 */}
               <div className="flex flex-col items-center flex-1 justify-center py-1 scale-95">
                 <Barcode 
-                  value={selectedProduct?.barcode || "0000000000000"} 
-                  width={1.2} 
+                  value={selectedProduct?.barcode || "00000000"} 
+                  format="EAN8"
+                  width={1.5} 
                   height={35} 
                   fontSize={8}
                   margin={0}
