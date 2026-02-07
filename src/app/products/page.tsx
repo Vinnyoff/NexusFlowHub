@@ -29,11 +29,12 @@ export default function ProductsPage() {
     size: "M"
   });
   
-  const { firestore } = useFirestore();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const { isAdmin } = useAuth();
 
   const productsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
     return collection(firestore, "products");
   }, [firestore]);
 
@@ -46,7 +47,6 @@ export default function ProductsPage() {
   ) || [];
 
   const handleSaveProduct = () => {
-    // Validação básica
     if (!newProduct.name || !newProduct.price) {
       toast({ 
         variant: "destructive", 
@@ -65,7 +65,6 @@ export default function ProductsPage() {
       return;
     }
 
-    // Gerar um ID único e um código de barras simulado
     const productId = crypto.randomUUID();
     const barcode = `FF-${Math.floor(1000 + Math.random() * 9000)}-${newProduct.size}`;
     
@@ -80,11 +79,9 @@ export default function ProductsPage() {
       barcode: barcode
     };
 
-    // Salvar no Firestore (Non-blocking para melhor UX)
     const docRef = doc(firestore, "products", productId);
     setDocumentNonBlocking(docRef, productData, { merge: true });
     
-    // Resetar estado e fechar modal
     setIsAdding(false);
     setNewProduct({ name: "", brand: "", model: "", price: "", stock: "", size: "M" });
     

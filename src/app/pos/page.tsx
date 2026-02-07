@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ export default function POSPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   
   const { toast } = useToast();
-  const { firestore } = useFirestore();
+  const firestore = useFirestore();
   const { user } = useUser();
   const inputRef = useRef<HTMLInputElement>(null);
 

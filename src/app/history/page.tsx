@@ -2,7 +2,7 @@
 "use client";
 
 import { AppLayout } from "@/components/layout/app-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebas
 import { collection } from "firebase/firestore";
 
 export default function SalesHistory() {
-  const { firestore } = useFirestore();
+  const firestore = useFirestore();
   const { user } = useUser();
 
   const salesQuery = useMemoFirebase(() => {
