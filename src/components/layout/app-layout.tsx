@@ -2,11 +2,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { LayoutGrid, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon, FileUp, Tag, Building2 } from "lucide-react";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
+import { LayoutGrid, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon, FileUp, Tag, Building2, ChevronRight, ClipboardList, Box } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/lib/auth-store";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 function ThemeToggle() {
   const [isDark, setIsDark] = useState(true);
@@ -49,18 +50,7 @@ function AppSidebar() {
   const pathname = usePathname();
   const { role, logout } = useAuth();
 
-  const menuItems = [
-    { title: "Painel", icon: LayoutDashboard, url: "/dashboard", roles: ["ADM", "CASHIER"] },
-    { title: "PDV", icon: ShoppingCart, url: "/pos", roles: ["ADM", "CASHIER"] },
-    { title: "Estoque", icon: Package, url: "/products", roles: ["ADM"] },
-    { title: "Fornecedores", icon: Building2, url: "/suppliers", roles: ["ADM"] },
-    { title: "Etiquetas", icon: Tag, url: "/labels", roles: ["ADM"] },
-    { title: "Importação", icon: FileUp, url: "/import", roles: ["ADM"] },
-    { title: "Histórico", icon: History, url: "/history", roles: ["ADM", "CASHIER"] },
-    { title: "Análise", icon: PieChart, url: "/reports", roles: ["ADM"] },
-  ];
-
-  const visibleItems = menuItems.filter(item => item.roles.includes(role || "CASHIER"));
+  const isAdmin = role === "ADM";
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border bg-card shadow-xl transition-all duration-300">
@@ -71,16 +61,98 @@ function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
-          {visibleItems.map((item) => (
-            <SidebarMenuItem key={item.url}>
-              <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title} className="rounded-xl h-11 hover:bg-primary/10 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all">
-                <a href={item.url} className="flex items-center gap-3">
-                  <item.icon className="h-5 w-5" />
-                  <span className="font-semibold">{item.title}</span>
+          {/* Painel Principal */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname === "/dashboard"} tooltip="Painel">
+              <a href="/dashboard">
+                <LayoutDashboard className="h-5 w-5" />
+                <span className="font-semibold">Painel</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          {/* PDV */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname === "/pos"} tooltip="PDV">
+              <a href="/pos">
+                <ShoppingCart className="h-5 w-5" />
+                <span className="font-semibold">Frente de Caixa (PDV)</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          {/* Módulo de Estoque com Submódulos */}
+          {isAdmin && (
+            <Collapsible asChild defaultOpen={pathname.startsWith("/products") || pathname === "/import" || pathname === "/labels"} className="group/collapsible">
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton tooltip="Estoque" className="w-full">
+                    <Package className="h-5 w-5" />
+                    <span className="font-semibold">Estoque</span>
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/products"}>
+                        <a href="/products">Central de estoque</a>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/import"}>
+                        <a href="/import">Importação de Notas</a>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/labels"}>
+                        <a href="/labels">Emissão de Etiquetas</a>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <a href="#" className="opacity-50">Matéria Prima</a>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          )}
+
+          {/* Fornecedores */}
+          {isAdmin && (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === "/suppliers"} tooltip="Fornecedores">
+                <a href="/suppliers">
+                  <Building2 className="h-5 w-5" />
+                  <span className="font-semibold">Fornecedores</span>
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          ))}
+          )}
+
+          {/* Histórico */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname === "/history"} tooltip="Histórico">
+              <a href="/history">
+                <History className="h-5 w-5" />
+                <span className="font-semibold">Histórico de Vendas</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          {/* Análise */}
+          {isAdmin && (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === "/reports"} tooltip="Análise">
+                <a href="/reports">
+                  <PieChart className="h-5 w-5" />
+                  <span className="font-semibold">Análise de Dados</span>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-2 border-t border-border mt-auto flex flex-col items-center gap-4">
@@ -104,7 +176,7 @@ function AppSidebar() {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={true}>
       <AppSidebar />
       <SidebarInset className="bg-background flex flex-col">
         <header className="flex h-14 items-center px-4 md:px-6 gap-4 sticky top-0 bg-card border-b border-border z-20 shadow-sm">
