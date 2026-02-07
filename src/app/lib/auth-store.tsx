@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
@@ -60,6 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (valid && newRole) {
         // No protótipo, simulamos o sucesso. Para persistência real com Firestore Rules,
         // o usuário precisaria estar no Firebase Auth.
+        // Simulamos o login bem-sucedido alterando o estado local para ADM se necessário
+        setRole(newRole);
         setLoading(false);
         return { success: true };
       } else {

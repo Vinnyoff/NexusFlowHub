@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shirt, Loader2, AlertCircle } from "lucide-react";
+import { Shirt, Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "./lib/auth-store";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
@@ -15,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { login, loginWithGoogle } = useAuth();
@@ -30,7 +30,7 @@ export default function LoginPage() {
     if (result.success) {
       router.push("/dashboard");
     } else {
-      setError(result.message || "Erro ao autenticar.");
+      setError(result.message || "E-mail ou senha incorretos.");
       setIsLoggingIn(false);
     }
   };
@@ -91,15 +91,24 @@ export default function LoginPage() {
                 <Label htmlFor="pass" className="text-[10px] font-bold uppercase text-muted-foreground ml-1">
                   Senha
                 </Label>
-                <Input 
-                  id="pass"
-                  type="password" 
-                  placeholder="••••••••" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="rounded-xl border-primary/10 h-11 focus:ring-primary/20 transition-all"
-                  required
-                />
+                <div className="relative">
+                  <Input 
+                    id="pass"
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="••••••••" 
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="rounded-xl border-primary/10 h-11 focus:ring-primary/20 transition-all pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <Button 
