@@ -34,7 +34,6 @@ export default function ProductsPage() {
   const { isAdmin } = useAuth();
 
   const productsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
     return collection(firestore, "products");
   }, [firestore]);
 
@@ -47,11 +46,6 @@ export default function ProductsPage() {
   ) || [];
 
   const handleSaveProduct = () => {
-    if (!firestore) {
-      toast({ variant: "destructive", title: "Erro", description: "Serviço de banco de dados não disponível." });
-      return;
-    }
-    
     // Validação básica
     if (!newProduct.name || !newProduct.price) {
       toast({ 
@@ -71,8 +65,8 @@ export default function ProductsPage() {
       return;
     }
 
-    // Criar um ID único simples e seguro
-    const productId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    // Gerar um ID único e um código de barras simulado
+    const productId = crypto.randomUUID();
     const barcode = `FF-${Math.floor(1000 + Math.random() * 9000)}-${newProduct.size}`;
     
     const productData = {
@@ -101,7 +95,7 @@ export default function ProductsPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (!firestore || !isAdmin) return;
+    if (!isAdmin) return;
     deleteDoc(doc(firestore, "products", id));
     toast({ title: "Removido", description: "Produto excluído do estoque." });
   };

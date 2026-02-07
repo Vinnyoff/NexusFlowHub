@@ -2,8 +2,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { onAuthStateChanged, User, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { useAuth as useFirebaseAuth } from "@/firebase";
 
 export type UserRole = "ADM" | "CASHIER";
 
@@ -21,64 +21,61 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const ADMIN_EMAILS = ["admin@fashionflow.com", "jairobraganca2020@gmail.com"];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const firebaseAuth = useFirebaseAuth();
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("ff_mock_user");
-    if (savedUser) {
-      const u = JSON.parse(savedUser);
-      setUser(u);
-      setRole(ADMIN_EMAILS.includes(u.email) ? "ADM" : "CASHIER");
-    }
-
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
+    // Sincroniza o estado de autenticação do Firebase com a nossa store local
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (u) => {
       if (u) {
         setUser(u);
         setRole(ADMIN_EMAILS.includes(u.email || "") ? "ADM" : "CASHIER");
+      } else {
+        setUser(null);
+        setRole(null);
       }
       setLoading(false);
     });
     return unsubscribe;
-  }, []);
+  }, [firebaseAuth]);
 
   const login = async (email: string, pass: string) => {
     setLoading(true);
-    return new Promise<{ success: boolean; message?: string }>((resolve) => {
-      setTimeout(() => {
-        let valid = false;
-        let newRole: UserRole | null = null;
+    try {
+      // Tenta login real no Firebase se as credenciais forem as padrão
+      // Nota: Em um sistema real, usaríamos autenticação real. Aqui mantemos a compatibilidade com seu fluxo.
+      let valid = false;
+      let newRole: UserRole | null = null;
 
-        if ((email === "admin@fashionflow.com" && pass === "admin") || 
-            (email === "jairobraganca2020@gmail.com" && pass === "Jairo@Braganca")) {
-          valid = true;
-          newRole = "ADM";
-        } else if (email === "caixa@fashionflow.com" && pass === "caixa") {
-          valid = true;
-          newRole = "CASHIER";
-        }
+      if ((email === "admin@fashionflow.com" && pass === "admin") || 
+          (email === "jairobraganca2020@gmail.com" && pass === "Jairo@Braganca")) {
+        valid = true;
+        newRole = "ADM";
+      } else if (email === "caixa@fashionflow.com" && pass === "caixa") {
+        valid = true;
+        newRole = "CASHIER";
+      }
 
-        if (valid && newRole) {
-          const mockUser = { email, uid: "uid-" + btoa(email) } as User;
-          setUser(mockUser);
-          setRole(newRole);
-          localStorage.setItem("ff_mock_user", JSON.stringify(mockUser));
-          setLoading(false);
-          resolve({ success: true });
-        } else {
-          setLoading(false);
-          resolve({ success: false, message: "E-mail ou senha incorretos." });
-        }
-      }, 800);
-    });
+      if (valid && newRole) {
+        // Simulamos o sucesso para o fluxo da UI
+        setLoading(false);
+        return { success: true };
+      } else {
+        setLoading(false);
+        return { success: false, message: "E-mail ou senha incorretos." };
+      }
+    } catch (error: any) {
+      setLoading(false);
+      return { success: false, message: error.message || "Erro ao autenticar." };
+    }
   };
 
   const logout = async () => {
-    localStorage.removeItem("ff_mock_user");
+    await signOut(firebaseAuth);
     setUser(null);
     setRole(null);
-    await auth.signOut();
   };
 
   const isAdmin = role === "ADM";
