@@ -101,11 +101,11 @@ function AppSidebar() {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <AppSidebar />
       <SidebarInset className="bg-background flex flex-col">
         <header className="flex h-14 items-center px-4 md:px-6 gap-4 sticky top-0 bg-card border-b border-border z-20 shadow-sm">
-          <SidebarTrigger className="md:hidden" />
+          <SidebarTrigger />
           <div className="flex items-center gap-2">
             <LayoutGrid className="h-5 w-5 text-primary" />
             <span className="font-headline font-bold text-foreground tracking-tight text-lg">NexusFlow</span>
