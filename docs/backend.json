@@ -98,6 +98,10 @@
         "phone": {
           "type": "string",
           "description": "Phone for contact."
+        },
+        "address": {
+          "type": "string",
+          "description": "Full address of the supplier."
         }
       },
       "required": [

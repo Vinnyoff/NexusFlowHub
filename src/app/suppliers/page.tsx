@@ -6,9 +6,10 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Trash2, Loader2, Building2, Pencil, Phone, Mail, FileText } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Building2, Pencil, Phone, Mail, FileText, MapPin, SearchCode } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
@@ -20,13 +21,15 @@ import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlo
 export default function SuppliersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isFetchingCnpj, setIsFetchingCnpj] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     fantasyName: "",
     cnpj: "",
     email: "",
-    phone: ""
+    phone: "",
+    address: ""
   });
   
   const firestore = useFirestore();
@@ -53,9 +56,54 @@ export default function SuppliersPage() {
       fantasyName: supplier.fantasyName || "",
       cnpj: supplier.cnpj || "",
       email: supplier.email || "",
-      phone: supplier.phone || ""
+      phone: supplier.phone || "",
+      address: supplier.address || ""
     });
     setIsDialogOpen(true);
+  };
+
+  const fetchCnpjData = async () => {
+    const cleanCnpj = formData.cnpj.replace(/\D/g, "");
+    if (cleanCnpj.length !== 14) {
+      toast({
+        variant: "destructive",
+        title: "CNPJ Inválido",
+        description: "O CNPJ deve conter 14 dígitos para consulta."
+      });
+      return;
+    }
+
+    setIsFetchingCnpj(true);
+    try {
+      const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
+      if (!response.ok) throw new Error("Não foi possível localizar o CNPJ.");
+      
+      const data = await response.json();
+      
+      const fullAddress = `${data.logradouro}, ${data.numero}${data.complemento ? ' - ' + data.complemento : ''}, ${data.bairro}, ${data.municipio} - ${data.uf}, CEP: ${data.cep}`;
+      
+      setFormData(prev => ({
+        ...prev,
+        name: data.razao_social || prev.name,
+        fantasyName: data.nome_fantasia || prev.fantasyName,
+        phone: data.ddd_telefone_1 || prev.phone,
+        email: data.email || prev.email,
+        address: fullAddress
+      }));
+
+      toast({
+        title: "Dados Recuperados",
+        description: "Informações do fornecedor preenchidas com sucesso."
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro na Consulta",
+        description: error.message || "Falha ao consultar CNPJ."
+      });
+    } finally {
+      setIsFetchingCnpj(false);
+    }
   };
 
   const handleSaveSupplier = () => {
@@ -73,7 +121,8 @@ export default function SuppliersPage() {
       fantasyName: formData.fantasyName,
       cnpj: formData.cnpj,
       email: formData.email,
-      phone: formData.phone
+      phone: formData.phone,
+      address: formData.address
     };
 
     if (editingId) {
@@ -93,7 +142,7 @@ export default function SuppliersPage() {
 
   const resetForm = () => {
     setEditingId(null);
-    setFormData({ name: "", fantasyName: "", cnpj: "", email: "", phone: "" });
+    setFormData({ name: "", fantasyName: "", cnpj: "", email: "", phone: "", address: "" });
   };
 
   const handleDelete = (id: string) => {
@@ -122,7 +171,7 @@ export default function SuppliersPage() {
                 Cadastrar Fornecedor
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] rounded-2xl">
+            <DialogContent className="sm:max-w-[550px] rounded-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-headline text-2xl text-primary">
                   {editingId ? "Editar Fornecedor" : "Novo Cadastro"}
@@ -131,33 +180,48 @@ export default function SuppliersPage() {
               
               <div className="grid grid-cols-1 gap-5 py-6">
                 <div className="space-y-2">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">CNPJ do Fornecedor</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="00.000.000/0000-00" 
+                      value={formData.cnpj}
+                      onChange={e => setFormData({...formData, cnpj: e.target.value})}
+                      className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20 font-mono"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={fetchCnpjData}
+                      disabled={isFetchingCnpj}
+                      className="h-12 px-4 rounded-xl gap-2 border-primary/20 hover:bg-primary/5 text-primary shrink-0"
+                    >
+                      {isFetchingCnpj ? <Loader2 className="h-4 w-4 animate-spin" /> : <SearchCode className="h-4 w-4" />}
+                      {isFetchingCnpj ? "Consultando..." : "Consultar"}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Razão Social</Label>
                   <Input 
-                    placeholder="Ex: Nexus Suprimentos LTDA" 
+                    placeholder="Nexus Suprimentos LTDA" 
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
                     className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
                   />
                 </div>
+                
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Nome Fantasia</Label>
                   <Input 
-                    placeholder="Ex: Nexus Distribuidora" 
+                    placeholder="Nexus Distribuidora" 
                     value={formData.fantasyName}
                     onChange={e => setFormData({...formData, fantasyName: e.target.value})}
                     className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
                   />
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">CNPJ</Label>
-                    <Input 
-                      placeholder="00.000.000/0000-00" 
-                      value={formData.cnpj}
-                      onChange={e => setFormData({...formData, cnpj: e.target.value})}
-                      className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
-                    />
-                  </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Telefone</Label>
                     <Input 
@@ -167,15 +231,25 @@ export default function SuppliersPage() {
                       className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">E-mail</Label>
+                    <Input 
+                      type="email"
+                      placeholder="contato@fornecedor.com" 
+                      value={formData.email}
+                      onChange={e => setFormData({...formData, email: e.target.value})}
+                      className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
+                    />
+                  </div>
                 </div>
+
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">E-mail</Label>
-                  <Input 
-                    type="email"
-                    placeholder="contato@fornecedor.com" 
-                    value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
-                    className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Endereço Completo</Label>
+                  <Textarea 
+                    placeholder="Rua, Número, Bairro, Cidade - UF, CEP" 
+                    value={formData.address}
+                    onChange={e => setFormData({...formData, address: e.target.value})}
+                    className="rounded-xl border-primary/10 min-h-[80px] text-sm bg-muted/20 resize-none"
                   />
                 </div>
               </div>
@@ -214,7 +288,7 @@ export default function SuppliersPage() {
                   <TableRow className="hover:bg-transparent border-b border-border/50">
                     <TableHead className="pl-6 h-14 text-[11px] uppercase tracking-widest font-bold">Fornecedor</TableHead>
                     <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Documento</TableHead>
-                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Contato</TableHead>
+                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Localização</TableHead>
                     <TableHead className="text-right pr-6 h-14 text-[11px] uppercase tracking-widest font-bold">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -224,18 +298,20 @@ export default function SuppliersPage() {
                       <TableCell className="pl-6 py-4">
                         <div className="font-bold text-foreground text-sm">{supplier.name}</div>
                         <div className="text-[10px] text-muted-foreground uppercase tracking-tight">{supplier.fantasyName || 'Razão Social'}</div>
+                        <div className="flex items-center gap-3 mt-1.5">
+                          {supplier.phone && <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><Phone className="h-2.5 w-2.5" /> {supplier.phone}</span>}
+                          {supplier.email && <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><Mail className="h-2.5 w-2.5" /> {supplier.email}</span>}
+                        </div>
                       </TableCell>
                       <TableCell className="py-4">
-                        <Badge variant="outline" className="font-mono text-[10px] bg-muted/30 border-none">{supplier.cnpj}</Badge>
+                        <Badge variant="outline" className="font-mono text-[10px] bg-muted/30 border-none px-2 py-0.5">{supplier.cnpj}</Badge>
                       </TableCell>
-                      <TableCell className="py-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Phone className="h-3 w-3" /> {supplier.phone || '---'}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Mail className="h-3 w-3" /> {supplier.email || '---'}
-                          </div>
+                      <TableCell className="py-4 max-w-[250px]">
+                        <div className="flex items-start gap-2">
+                          <MapPin className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                          <span className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                            {supplier.address || 'Endereço não informado'}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-right pr-6 py-4">
