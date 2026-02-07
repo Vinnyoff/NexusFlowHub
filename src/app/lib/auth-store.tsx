@@ -12,7 +12,7 @@ interface AuthContextType {
   role: UserRole | null;
   loading: boolean;
   isAdmin: boolean;
-  login: (email: string, pass: string) => Promise<void>;
+  login: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -24,7 +24,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // For prototype simplicity, we also check localStorage if no real Firebase user
     const savedUser = localStorage.getItem("ff_mock_user");
     if (savedUser) {
       const u = JSON.parse(savedUser);
@@ -43,18 +42,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, pass: string) => {
-    // Prototype Mock Login
     setLoading(true);
-    return new Promise<void>((resolve) => {
+    return new Promise<{ success: boolean; message?: string }>((resolve) => {
       setTimeout(() => {
-        const mockUser = { email, uid: "mock-uid-" + Date.now() } as User;
-        setUser(mockUser);
-        const newRole = email === "admin@fashionflow.com" ? "ADM" : "CASHIER";
-        setRole(newRole);
-        localStorage.setItem("ff_mock_user", JSON.stringify(mockUser));
-        setLoading(false);
-        resolve();
-      }, 800);
+        // Verificação de credenciais para o protótipo
+        let valid = false;
+        let newRole: UserRole | null = null;
+
+        if (email === "admin@fashionflow.com" && pass === "admin") {
+          valid = true;
+          newRole = "ADM";
+        } else if (email === "caixa@fashionflow.com" && pass === "caixa") {
+          valid = true;
+          newRole = "CASHIER";
+        }
+
+        if (valid && newRole) {
+          const mockUser = { email, uid: "mock-uid-" + Date.now() } as User;
+          setUser(mockUser);
+          setRole(newRole);
+          localStorage.setItem("ff_mock_user", JSON.stringify(mockUser));
+          setLoading(false);
+          resolve({ success: true });
+        } else {
+          setLoading(false);
+          resolve({ success: false, message: "E-mail ou senha incorretos." });
+        }
+      }, 1000);
     });
   };
 
