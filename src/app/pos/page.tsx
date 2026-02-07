@@ -47,6 +47,11 @@ export default function POSPage() {
     const product = products?.find(p => p.internalCode === code || p.barcode === code || p.id === code);
     
     if (product) {
+      if (product.quantity <= 0) {
+        toast({ variant: "destructive", title: "Estoque insuficiente", description: `O produto ${product.name} está esgotado.` });
+        return;
+      }
+
       setCart(prev => {
         const existing = prev.find(item => item.id === product.id);
         if (existing) {
@@ -73,9 +78,14 @@ export default function POSPage() {
   };
 
   const updateQuantity = (id: string, delta: number) => {
+    const product = products?.find(p => p.id === id);
     setCart(prev => prev.map(item => {
       if (item.id === id) {
         const newQty = Math.max(1, item.quantity + delta);
+        if (product && newQty > product.quantity) {
+          toast({ variant: "destructive", title: "Limite de estoque", description: `Quantidade máxima disponível: ${product.quantity}` });
+          return item;
+        }
         return { ...item, quantity: newQty };
       }
       return item;
@@ -101,15 +111,13 @@ export default function POSPage() {
     try {
       const saleId = crypto.randomUUID();
       const saleDocRef = doc(firestore, "users", user.uid, "sales", saleId);
-
-      // Obter a data local no formato YYYY-MM-DD para filtragem precisa
       const now = new Date();
       const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
       const saleData = {
         id: saleId,
         dateTime: now.toISOString(),
-        localDate: localDate, // Campo chave para busca no histórico
+        localDate: localDate,
         createdAt: serverTimestamp(),
         totalAmount: Number(total.toFixed(2)),
         userId: user.uid,
@@ -128,6 +136,7 @@ export default function POSPage() {
       const batch = writeBatch(firestore);
       batch.set(saleDocRef, saleData);
 
+      // Baixa de estoque e registro de itens individuais
       cart.forEach(item => {
         const saleItemId = crypto.randomUUID();
         const itemRef = doc(firestore, "users", user.uid, "sales", saleId, "saleItems", saleItemId);
@@ -142,9 +151,8 @@ export default function POSPage() {
         const productRef = doc(firestore, "products", item.id);
         const product = products?.find(p => p.id === item.id);
         if (product) {
-          batch.update(productRef, {
-            quantity: Math.max(0, (Number(product.quantity) || 0) - Number(item.quantity))
-          });
+          const newQuantity = Math.max(0, (Number(product.quantity) || 0) - Number(item.quantity));
+          batch.update(productRef, { quantity: newQuantity });
         }
       });
 
@@ -153,7 +161,7 @@ export default function POSPage() {
       setCart([]);
       toast({ 
         title: "Venda Finalizada", 
-        description: `Total de R$ ${total.toFixed(2)} registrado via ${paymentMethod}.` 
+        description: `Total de R$ ${total.toFixed(2)} registrado e estoque atualizado.` 
       });
     } catch (error: any) {
       console.error("Erro ao finalizar venda:", error);
@@ -183,7 +191,7 @@ export default function POSPage() {
                 <div className="relative flex-1">
                   <Input 
                     ref={inputRef}
-                    placeholder="Passe o leitor de barras..." 
+                    placeholder="Passe o leitor de barras ou código interno..." 
                     value={barcodeInput}
                     onChange={(e) => setBarcodeInput(e.target.value)}
                     className="text-lg h-12"

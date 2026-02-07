@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function SalesHistory() {
-  // Inicializar com a data local YYYY-MM-DD
   const [selectedDate, setSelectedDate] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -41,39 +40,17 @@ export default function SalesHistory() {
 
   const salesQuery = useMemoFirebase(() => {
     if (!firestore || !user || !selectedDate) return null;
-    
-    // Consulta otimizada por data local exata (salva no novo campo localDate)
-    // Se não encontrar por localDate (registros antigos), tentamos por prefixo no dateTime
-    const startRange = `${selectedDate}T00:00:00.000Z`;
-    const endRange = `${selectedDate}T23:59:59.999Z`;
-
     return query(
       collection(firestore, "users", user.uid, "sales"), 
       where("localDate", "==", selectedDate)
     );
   }, [firestore, user, selectedDate]);
 
-  // Fallback para registros antigos que usavam apenas o formato ISO UTC no campo dateTime
-  const legacySalesQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !selectedDate) return null;
-    const startRange = `${selectedDate}T00:00:00.000Z`;
-    const endRange = `${selectedDate}T23:59:59.999Z`;
-    return query(
-      collection(firestore, "users", user.uid, "sales"), 
-      where("dateTime", ">=", startRange),
-      where("dateTime", "<=", endRange)
-    );
-  }, [firestore, user, selectedDate]);
-
   const { data: sales, isLoading } = useCollection(salesQuery);
-  const { data: legacySales, isLoading: isLoadingLegacy } = useCollection(legacySalesQuery);
 
-  // Combinar e desduplicar resultados das duas consultas
-  const combinedSales = [...(sales || []), ...(legacySales || [])]
-    .filter((v, i, a) => a.findIndex(t => t.id === v.id) === i)
+  const combinedSales = (sales || [])
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
 
-  // Filtro de pesquisa por ID ou por nome de produto dentro da lista carregada
   const filteredSales = combinedSales.filter(sale => {
     const matchesId = sale.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesProduct = sale.saleItems?.some((item: any) => 
@@ -85,16 +62,13 @@ export default function SalesHistory() {
 
   const handleDeleteDaySales = async () => {
     if (!firestore || !user || combinedSales.length === 0) return;
-    
     setIsDeleting(true);
     const batch = writeBatch(firestore);
-    
     try {
       combinedSales.forEach((sale) => {
         const saleRef = doc(firestore, "users", user.uid, "sales", sale.id);
         batch.delete(saleRef);
       });
-      
       await batch.commit();
       toast({
         title: "Histórico Excluído",
@@ -144,7 +118,7 @@ export default function SalesHistory() {
                       <AlertTriangle className="h-5 w-5" /> Atenção: Ação Irreversível
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Você está prestes a excluir **todas as {combinedSales.length} vendas** registradas em {formattedSelectedDate}. Esta ação não pode ser desfeita e removerá os dados permanentemente.
+                      Você está prestes a excluir **todas as {combinedSales.length} vendas** registradas em {formattedSelectedDate}. Esta ação não pode ser desfeita.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -185,7 +159,7 @@ export default function SalesHistory() {
 
         <Card className="border-none shadow-prominent overflow-hidden rounded-2xl">
           <CardContent className="p-0">
-            {(isLoading || isLoadingLegacy) && combinedSales.length === 0 ? (
+            {isLoading ? (
               <div className="flex flex-col items-center justify-center py-32 gap-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 <p className="text-sm font-medium text-muted-foreground">Consultando base de dados...</p>
@@ -195,7 +169,7 @@ export default function SalesHistory() {
                 <TableHeader className="bg-muted/10">
                   <TableRow className="hover:bg-transparent border-b border-border/50">
                     <TableHead className="pl-6 h-14">Venda</TableHead>
-                    <TableHead className="h-14">Produtos & Quantidades</TableHead>
+                    <TableHead className="h-14">Detalhamento dos Itens</TableHead>
                     <TableHead className="h-14">Horário</TableHead>
                     <TableHead className="h-14">Pagamento</TableHead>
                     <TableHead className="h-14">Total Geral</TableHead>
@@ -210,62 +184,43 @@ export default function SalesHistory() {
                           #{sale.id.substring(0, 8)}
                         </span>
                       </TableCell>
-                      <TableCell className="max-w-xl py-4">
+                      <TableCell className="max-w-2xl py-4">
                         <div className="space-y-2">
-                          {sale.saleItems && Array.isArray(sale.saleItems) ? (
-                            sale.saleItems.map((item: any, idx: number) => {
-                              const price = Number(item.price) || 0;
-                              const quantity = Number(item.quantity) || 0;
-                              const subtotal = price * quantity;
-                              
-                              return (
-                                <div key={`${sale.id}-${idx}`} className="flex items-center justify-between gap-4 p-2 rounded-xl bg-muted/5 group-hover:bg-white border border-transparent hover:border-border/40 transition-all shadow-sm">
-                                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    <div className="p-2 bg-primary/5 rounded-lg shrink-0">
-                                      <Package className="h-4 w-4 text-primary opacity-70" />
-                                    </div>
-                                    <div className="flex flex-col min-w-0">
-                                      <span className="text-sm font-bold leading-tight text-foreground truncate">
-                                        {item.name || "Produto"}
-                                      </span>
-                                      <div className="flex gap-2 mt-0.5">
-                                        <Badge variant="outline" className="text-[9px] font-bold uppercase py-0 px-1 border-muted text-muted-foreground">
-                                          {item.brand || '-'}
-                                        </Badge>
-                                        <span className="text-[9px] text-muted-foreground/60 font-medium truncate">
-                                          {item.model || '-'}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-6 text-right shrink-0">
-                                    <div className="flex flex-col items-end">
-                                      <span className="text-[8px] text-muted-foreground uppercase font-black tracking-widest leading-none">Qtd</span>
-                                      <span className="text-sm font-black text-foreground">{quantity}</span>
-                                    </div>
-                                    <div className="flex flex-col items-end">
-                                      <span className="text-[8px] text-primary uppercase font-black tracking-widest leading-none">Subtotal</span>
-                                      <span className="text-sm font-black text-primary">
-                                        R$ {subtotal.toFixed(2)}
-                                      </span>
-                                    </div>
-                                  </div>
+                          <div className="grid grid-cols-12 gap-2 text-[10px] font-black uppercase text-muted-foreground mb-1 px-2">
+                            <div className="col-span-5">Produto</div>
+                            <div className="col-span-2 text-center">Qtd</div>
+                            <div className="col-span-2 text-right">Unitário</div>
+                            <div className="col-span-3 text-right">Subtotal</div>
+                          </div>
+                          {sale.saleItems?.map((item: any, idx: number) => {
+                            const price = Number(item.price) || 0;
+                            const quantity = Number(item.quantity) || 0;
+                            const subtotal = price * quantity;
+                            
+                            return (
+                              <div key={`${sale.id}-${idx}`} className="grid grid-cols-12 items-center gap-2 p-2 rounded-xl bg-muted/5 group-hover:bg-white border border-transparent hover:border-border/40 transition-all shadow-sm">
+                                <div className="col-span-5 flex flex-col min-w-0">
+                                  <span className="text-sm font-bold text-foreground truncate">{item.name || "Produto"}</span>
+                                  <span className="text-[9px] text-muted-foreground truncate">{item.brand} | {item.model}</span>
                                 </div>
-                              );
-                            })
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">Detalhes não disponíveis</span>
-                          )}
+                                <div className="col-span-2 text-center">
+                                  <Badge className="bg-primary/10 text-primary hover:bg-primary/20 text-[11px] font-black">{quantity}</Badge>
+                                </div>
+                                <div className="col-span-2 text-right">
+                                  <span className="text-[11px] font-medium text-muted-foreground">R$ {price.toFixed(2)}</span>
+                                </div>
+                                <div className="col-span-3 text-right">
+                                  <span className="text-sm font-black text-primary">R$ {subtotal.toFixed(2)}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </TableCell>
                       <TableCell className="text-sm whitespace-nowrap">
                         <div className="flex flex-col">
                           <span className="font-black text-foreground text-base">
                             {new Date(sale.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground font-bold">
-                            {new Date(sale.dateTime).toLocaleDateString('pt-BR')}
                           </span>
                         </div>
                       </TableCell>
@@ -286,13 +241,12 @@ export default function SalesHistory() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {filteredSales.length === 0 && !isLoading && !isLoadingLegacy && (
+                  {filteredSales.length === 0 && !isLoading && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-32 opacity-30">
                         <div className="flex flex-col items-center">
                           <Package className="h-20 w-20 mb-6" />
                           <p className="text-lg font-bold uppercase tracking-[0.2em]">Sem vendas em {formattedSelectedDate}</p>
-                          <p className="text-sm mt-2 font-medium">Selecione outra data no calendário ou altere o termo de busca.</p>
                         </div>
                       </TableCell>
                     </TableRow>
