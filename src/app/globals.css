@@ -5,48 +5,48 @@
 @layer base {
   :root {
     /* Background: Escurecido para um tom de cinza-azulado fosco */
-    --background: 210 20% 95%;
+    --background: 210 20% 90%;
     /* Text/Foreground: #0F172A */
     --foreground: 222 47% 11%;
     
     /* Cards: Levemente mais claros que o fundo para manter contraste com sombras */
-    --card: 210 20% 98%;
+    --card: 210 20% 93%;
     --card-foreground: 222 47% 11%;
     
-    --popover: 210 20% 98%;
+    --popover: 210 20% 93%;
     --popover-foreground: 222 47% 11%;
     
-    /* Primary: #2563EB */
-    --primary: 221 83% 53%;
+    /* Primary: Escurecido 15% (de L:53% para L:38%) */
+    --primary: 221 83% 38%;
     --primary-foreground: 210 40% 98%;
     
-    --secondary: 210 20% 92%;
+    --secondary: 210 20% 85%;
     --secondary-foreground: 222 47% 11%;
     
-    --muted: 210 20% 92%;
+    --muted: 210 20% 85%;
     --muted-foreground: 215 16% 47%;
     
-    --accent: 210 20% 92%;
+    --accent: 210 20% 85%;
     --accent-foreground: 222 47% 11%;
     
-    --destructive: 0 84% 60%;
+    --destructive: 0 84% 45%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 214 32% 88%;
-    --input: 214 32% 88%;
-    --ring: 221 83% 53%;
+    --border: 214 32% 80%;
+    --input: 214 32% 80%;
+    --ring: 221 83% 38%;
     
     --radius: 0.75rem;
 
     /* Sidebar Light */
-    --sidebar-background: 210 20% 97%;
+    --sidebar-background: 210 20% 92%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary: 221 83% 38%;
     --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 20% 93%;
+    --sidebar-accent: 210 20% 88%;
     --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 32% 88%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-border: 214 32% 80%;
+    --sidebar-ring: 221 83% 38%;
   }
 
   .dark {
@@ -61,8 +61,8 @@
     --popover: 217 33% 17%;
     --popover-foreground: 213 32% 91%;
     
-    /* Primary Action: #3B82F6 */
-    --primary: 214 90% 61%;
+    /* Primary Action: Escurecido 15% (de L:61% para L:46%) */
+    --primary: 214 90% 46%;
     --primary-foreground: 222 47% 11%;
     
     --secondary: 217 33% 25%;
@@ -71,25 +71,25 @@
     --muted: 217 33% 17%;
     --muted-foreground: 215 16% 62%;
     
-    --accent: 221 83% 53%;
+    --accent: 221 83% 38%;
     --accent-foreground: 213 32% 91%;
     
-    --destructive: 0 84% 60%;
+    --destructive: 0 84% 45%;
     --destructive-foreground: 210 40% 98%;
     
     --border: 217 33% 25%;
     --input: 217 33% 25%;
-    --ring: 214 90% 61%;
+    --ring: 214 90% 46%;
 
     /* Sidebar Dark */
     --sidebar-background: 217 33% 17%;
     --sidebar-foreground: 213 32% 91%;
-    --sidebar-primary: 214 90% 61%;
+    --sidebar-primary: 214 90% 46%;
     --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 221 83% 53%;
+    --sidebar-accent: 221 83% 38%;
     --sidebar-accent-foreground: 213 32% 91%;
     --sidebar-border: 217 33% 25%;
-    --sidebar-ring: 214 90% 61%;
+    --sidebar-ring: 214 90% 46%;
   }
 }
 
@@ -131,5 +131,5 @@
 
 /* Sombras proeminentes para destacar elementos no modo claro */
 .shadow-prominent {
-  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.12), 0 10px 15px -8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.2), 0 12px 20px -8px rgba(0, 0, 0, 0.15);
 }
