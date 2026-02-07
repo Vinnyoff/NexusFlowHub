@@ -47,7 +47,10 @@ export default function ProductsPage() {
   ) || [];
 
   const handleSaveProduct = () => {
-    if (!firestore) return;
+    if (!firestore) {
+      toast({ variant: "destructive", title: "Erro", description: "Serviço de banco de dados não disponível." });
+      return;
+    }
     
     // Validação básica
     if (!newProduct.name || !newProduct.price) {
@@ -68,8 +71,8 @@ export default function ProductsPage() {
       return;
     }
 
-    const productId = crypto.randomUUID();
-    // Gerar um código de barras automático padrão FashionFlow
+    // Criar um ID único simples e seguro
+    const productId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     const barcode = `FF-${Math.floor(1000 + Math.random() * 9000)}-${newProduct.size}`;
     
     const productData = {
@@ -78,7 +81,7 @@ export default function ProductsPage() {
       brand: newProduct.brand,
       model: newProduct.model,
       size: newProduct.size,
-      price: parseFloat(newProduct.price),
+      price: parseFloat(newProduct.price) || 0,
       quantity: parseInt(newProduct.stock) || 0,
       barcode: barcode
     };
@@ -200,8 +203,8 @@ export default function ProductsPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAdding(false)}>Cancelar</Button>
-                <Button onClick={handleSaveProduct}>Salvar Produto</Button>
+                <Button type="button" variant="outline" onClick={() => setIsAdding(false)}>Cancelar</Button>
+                <Button type="button" onClick={handleSaveProduct}>Salvar Produto</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
