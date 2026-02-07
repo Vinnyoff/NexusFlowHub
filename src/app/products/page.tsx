@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Barcode, Printer, Trash2, Edit, Loader2, Package } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Package } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
@@ -47,9 +47,29 @@ export default function ProductsPage() {
   ) || [];
 
   const handleSaveProduct = () => {
-    if (!firestore || !newProduct.name || !newProduct.price || !isAdmin) return;
+    if (!firestore) return;
+    
+    // Validação básica
+    if (!newProduct.name || !newProduct.price) {
+      toast({ 
+        variant: "destructive", 
+        title: "Campos obrigatórios", 
+        description: "Por favor, preencha o nome e o preço do produto." 
+      });
+      return;
+    }
+
+    if (!isAdmin) {
+      toast({ 
+        variant: "destructive", 
+        title: "Acesso negado", 
+        description: "Apenas administradores podem cadastrar produtos." 
+      });
+      return;
+    }
 
     const productId = crypto.randomUUID();
+    // Gerar um código de barras automático padrão FashionFlow
     const barcode = `FF-${Math.floor(1000 + Math.random() * 9000)}-${newProduct.size}`;
     
     const productData = {
@@ -63,11 +83,18 @@ export default function ProductsPage() {
       barcode: barcode
     };
 
-    setDocumentNonBlocking(doc(firestore, "products", productId), productData, { merge: true });
+    // Salvar no Firestore (Non-blocking para melhor UX)
+    const docRef = doc(firestore, "products", productId);
+    setDocumentNonBlocking(docRef, productData, { merge: true });
     
+    // Resetar estado e fechar modal
     setIsAdding(false);
     setNewProduct({ name: "", brand: "", model: "", price: "", stock: "", size: "M" });
-    toast({ title: "Sucesso", description: "Produto cadastrado com sucesso!" });
+    
+    toast({ 
+      title: "Produto Cadastrado", 
+      description: `${productData.name} foi adicionado ao estoque.` 
+    });
   };
 
   const handleDelete = (id: string) => {
@@ -148,7 +175,7 @@ export default function ProductsPage() {
                   />
                 </div>
                 <div className="space-y-2 col-span-2">
-                  <Label>Tamanhos Disponíveis</Label>
+                  <Label>Tamanho Selecionado</Label>
                   <div className="flex gap-2">
                     {["P", "M", "G", "GG", "EG"].map(size => (
                       <Badge 
@@ -228,21 +255,17 @@ export default function ProductsPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <code className="bg-muted px-2 py-1 rounded text-xs">{product.barcode}</code>
-                        </div>
+                        <code className="bg-muted px-2 py-1 rounded text-xs">{product.barcode}</code>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="h-8 w-8 text-destructive"
-                            onClick={() => handleDelete(product.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => handleDelete(product.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
