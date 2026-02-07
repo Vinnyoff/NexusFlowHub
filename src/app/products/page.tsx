@@ -79,17 +79,24 @@ export default function ProductsPage() {
       barcode: barcode
     };
 
-    // Usando o caminho explícito para garantir estabilidade
-    const docRef = doc(firestore, "products", productId);
-    setDocumentNonBlocking(docRef, productData, { merge: true });
-    
-    setIsAdding(false);
-    setNewProduct({ name: "", brand: "", model: "", price: "", stock: "", size: "M" });
-    
-    toast({ 
-      title: "Produto Cadastrado", 
-      description: `${productData.name} foi adicionado ao estoque.` 
-    });
+    try {
+      const docRef = doc(firestore, "products", productId);
+      setDocumentNonBlocking(docRef, productData, { merge: true });
+      
+      setIsAdding(false);
+      setNewProduct({ name: "", brand: "", model: "", price: "", stock: "", size: "M" });
+      
+      toast({ 
+        title: "Produto Cadastrado", 
+        description: `${productData.name} foi adicionado ao estoque.` 
+      });
+    } catch (e) {
+      toast({ 
+        variant: "destructive", 
+        title: "Erro ao salvar", 
+        description: "Não foi possível conectar ao banco de dados." 
+      });
+    }
   };
 
   const handleDelete = (id: string) => {

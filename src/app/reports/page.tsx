@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp, AlertCircle, ShoppingCart, Loader2 } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { generateRestockSuggestions } from "@/ai/flows/ai-restock-suggestions";
 import { Badge } from "@/components/ui/badge";
 
@@ -42,7 +42,6 @@ export default function ReportsPage() {
   const handleAiSuggestions = async () => {
     setIsAiLoading(true);
     try {
-      // Mock data for the AI agent
       const input = {
         salesHistory: "Camiseta Basic (M): 40 sold last week. Calça Jeans Slim (42): 15 sold last week. Jaqueta Couro (P): 1 sold last week.",
         stockLevels: "Camiseta Basic (M): 5 items. Calça Jeans Slim (42): 2 items. Jaqueta Couro (P): 12 items."
