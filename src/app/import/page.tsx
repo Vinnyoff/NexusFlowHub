@@ -17,7 +17,8 @@ import {
   Table as TableIcon,
   ShoppingCart,
   ArrowRight,
-  ClipboardList
+  ClipboardList,
+  TrendingUp
 } from "lucide-react";
 import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +47,7 @@ interface InvoiceProduct {
   name: string;
   qty: number;
   price: number;
+  convertedPrice: number; // Preço de venda sugerido/convertido
   total: number;
   barcode: string;
   ncm: string;
@@ -66,7 +68,6 @@ export default function ImportPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
 
-  // Busca produtos existentes para cruzamento de dados
   const productsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, "products");
@@ -116,17 +117,20 @@ export default function ImportPage() {
           
           total += itemTotal;
 
-          // Verifica se o produto já existe no sistema (por código de barras ou nome)
           const existing = existingProducts?.find(p => 
             (barcode && p.barcode === barcode) || 
             (p.name.toLowerCase() === name.toLowerCase())
           );
+
+          // Cálculo simples de preço convertido (ex: margem de 50%)
+          const convertedPrice = price * 1.5;
 
           products.push({
             id: (i + 1).toString(),
             name,
             qty,
             price,
+            convertedPrice,
             total: itemTotal,
             barcode,
             ncm,
@@ -181,12 +185,11 @@ export default function ImportPage() {
 
     setIsConsulting(true);
     
-    // Simulação de consulta retornando dados mockados baseados na chave
     setTimeout(() => {
       setIsConsulting(false);
       const mockItems: InvoiceProduct[] = [
-        { id: "1", name: "Produto Exemplo 01", qty: 10, price: 45.00, total: 450.00, barcode: "7891234567890", ncm: "61091000", status: "new" },
-        { id: "2", name: "Produto Exemplo 02", qty: 5, price: 110.00, total: 550.00, barcode: "7890987654321", ncm: "62034200", status: "exists", existingId: existingProducts?.[0]?.id },
+        { id: "1", name: "Produto Exemplo 01", qty: 10, price: 45.00, convertedPrice: 67.50, total: 450.00, barcode: "7891234567890", ncm: "61091000", status: "new" },
+        { id: "2", name: "Produto Exemplo 02", qty: 5, price: 110.00, convertedPrice: 165.00, total: 550.00, barcode: "7890987654321", ncm: "62034200", status: "exists", existingId: existingProducts?.[0]?.id },
       ];
       setInvoiceProducts(mockItems);
       setTotalInvoice(1000.00);
@@ -203,16 +206,14 @@ export default function ImportPage() {
     try {
       invoiceProducts.forEach((item) => {
         if (item.status === "exists" && item.existingId) {
-          // Atualiza produto existente (soma quantidade)
           const existing = existingProducts?.find(p => p.id === item.existingId);
           const docRef = doc(firestore, "products", item.existingId);
           batch.update(docRef, {
             quantity: (existing?.quantity || 0) + item.qty,
-            price: item.price,
+            price: item.convertedPrice, // Usa o preço convertido para venda
             ncm: item.ncm || existing?.ncm || ""
           });
         } else {
-          // Cria novo produto
           const newId = crypto.randomUUID();
           const docRef = doc(firestore, "products", newId);
           batch.set(docRef, {
@@ -222,7 +223,7 @@ export default function ImportPage() {
             model: "NF-e",
             category: "Geral",
             size: "Padrão",
-            price: item.price,
+            price: item.convertedPrice, // Usa o preço convertido para venda
             quantity: item.qty,
             barcode: item.barcode,
             ncm: item.ncm,
@@ -251,6 +252,11 @@ export default function ImportPage() {
     } finally {
       setIsFinalizing(false);
     }
+  };
+
+  const updateConvertedPrice = (id: string, newPrice: string) => {
+    const val = parseFloat(newPrice) || 0;
+    setInvoiceProducts(prev => prev.map(p => p.id === id ? { ...p, convertedPrice: val } : p));
   };
 
   return (
@@ -381,7 +387,7 @@ export default function ImportPage() {
         </div>
 
         <Dialog open={showProductsModal} onOpenChange={setShowProductsModal}>
-          <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl">
+          <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl">
             <DialogHeader className="p-6 border-b bg-muted/20">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center text-white">
@@ -401,9 +407,10 @@ export default function ImportPage() {
                     <TableHead className="pl-6 text-[10px] font-bold uppercase">Produto na Nota</TableHead>
                     <TableHead className="text-[10px] font-bold uppercase">Fiscal (NCM)</TableHead>
                     <TableHead className="text-center text-[10px] font-bold uppercase">Qtd</TableHead>
-                    <TableHead className="text-right text-[10px] font-bold uppercase">Preço Un.</TableHead>
+                    <TableHead className="text-right text-[10px] font-bold uppercase">Preço Compra</TableHead>
+                    <TableHead className="text-right text-[10px] font-bold uppercase text-primary bg-primary/5">Preço Convertido</TableHead>
                     <TableHead className="text-right text-[10px] font-bold uppercase">Total Item</TableHead>
-                    <TableHead className="text-center text-[10px] font-bold uppercase">Ação</TableHead>
+                    <TableHead className="text-center text-[10px] font-bold uppercase">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -421,12 +428,24 @@ export default function ImportPage() {
                       </TableCell>
                       <TableCell className="text-center font-bold">{product.qty}</TableCell>
                       <TableCell className="text-right font-medium">R$ {product.price.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-black text-primary">R$ {product.total.toFixed(2)}</TableCell>
+                      <TableCell className="text-right bg-primary/5">
+                        <div className="flex items-center justify-end gap-2">
+                          <TrendingUp className="h-3 w-3 text-primary" />
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            value={product.convertedPrice}
+                            onChange={(e) => updateConvertedPrice(product.id, e.target.value)}
+                            className="h-8 w-24 text-right font-black text-primary border-primary/20 bg-white"
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">R$ {product.total.toFixed(2)}</TableCell>
                       <TableCell className="text-center">
                         {product.status === "exists" ? (
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[9px] uppercase font-bold">Atualizar Estoque</Badge>
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[9px] uppercase font-bold">Atualizar</Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[9px] uppercase font-bold">Novo Cadastro</Badge>
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[9px] uppercase font-bold">Novo</Badge>
                         )}
                       </TableCell>
                     </TableRow>
