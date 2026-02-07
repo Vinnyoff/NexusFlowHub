@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Product": {
@@ -26,11 +25,11 @@
         },
         "category": {
           "type": "string",
-          "description": "Category of the product (e.g., Geral, Calças)."
+          "description": "Category of the product."
         },
         "size": {
           "type": "string",
-          "description": "Size of the product (e.g., P, M, G, 38, 40)."
+          "description": "Variant or size of the product."
         },
         "price": {
           "type": "number",
@@ -78,11 +77,11 @@
         },
         "userId": {
           "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Sale)"
+          "description": "Reference to User."
         },
         "saleItems": {
           "type": "array",
-          "description": "References to SaleItem. (Relationship: Sale 1:N SaleItem)",
+          "description": "References to SaleItem.",
           "items": {
             "type": "string"
           }
@@ -109,19 +108,19 @@
         },
         "saleId": {
           "type": "string",
-          "description": "Reference to Sale. (Relationship: Sale 1:N SaleItem)"
+          "description": "Reference to Sale."
         },
         "productId": {
           "type": "string",
-          "description": "Reference to Product. (Relationship: Product 1:N SaleItem)"
+          "description": "Reference to Product."
         },
         "quantity": {
           "type": "number",
-          "description": "Quantity of the product sold in this sale item."
+          "description": "Quantity sold."
         },
         "price": {
           "type": "number",
-          "description": "Price of the product at the time of the sale."
+          "description": "Price at sale time."
         }
       },
       "required": [
@@ -136,7 +135,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the system (Admin or Cashier).",
+      "description": "Represents a user of the system.",
       "properties": {
         "id": {
           "type": "string",
@@ -149,7 +148,7 @@
         },
         "role": {
           "type": "string",
-          "description": "Role of the user (Admin or Cashier)."
+          "description": "Role (Admin or Cashier)."
         }
       },
       "required": [
@@ -162,7 +161,6 @@
   "auth": {
     "providers": [
       "password",
-      "google.com",
       "anonymous"
     ]
   },
@@ -175,7 +173,7 @@
           "schema": {
             "$ref": "#/backend/entities/Product"
           },
-          "description": "Stores product information. Each product is treated as a unique item regarding of its size, model or brand. All are stored in a flat collection with no authorization context.",
+          "description": "Stores product information.",
           "params": [
             {
               "name": "productId",
@@ -191,7 +189,7 @@
           "schema": {
             "$ref": "#/backend/entities/Sale"
           },
-          "description": "Stores sale transactions for each user. Path-based ownership.",
+          "description": "Stores sale transactions for each user.",
           "params": [
             {
               "name": "userId",
@@ -211,7 +209,7 @@
           "schema": {
             "$ref": "#/backend/entities/SaleItem"
           },
-          "description": "Stores individual items within a sale, nested under the sale document. Path-based ownership continues.",
+          "description": "Stores individual items within a sale.",
           "params": [
             {
               "name": "userId",
@@ -235,7 +233,7 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Collection to indicate admin roles based on document existence. If a document exists for a user ID, the user is an admin.",
+          "description": "Collection to indicate admin roles.",
           "params": [
             {
               "name": "userId",
@@ -245,6 +243,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the features described in the prompt, focusing on a clothing store's product and sales management. Products are stored in a flat products collection. Sales are stored in user-scoped collections (/users/{userId}/sales/{saleId}). SaleItems are nested under sales. User roles (Admin/Cashier) are determined by the existence of a document in a specific role collection (roles_admin/{userId}). Google.com auth is added as a provider."
+    "reasoning": "Standard corporate management structure focused on generic products and sales tracking."
   }
 }

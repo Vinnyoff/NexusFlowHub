@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
@@ -6,8 +5,6 @@ import {
   onAuthStateChanged, 
   User, 
   signOut, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
   signInWithEmailAndPassword, 
   signInAnonymously 
 } from "firebase/auth";
@@ -21,13 +18,12 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   login: (email: string, pass: string) => Promise<{ success: boolean; message?: string }>;
-  loginWithGoogle: () => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const ADMIN_EMAILS = ["admin@fashionflow.com", "jairobraganca2020@gmail.com"];
+const ADMIN_EMAILS = ["admin@nexusflow.com", "jairobraganca2020@gmail.com"];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const firebaseAuth = useFirebaseAuth();
@@ -70,9 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {
         // Fallback: Se o usuário não existir no Auth ainda, usamos as credenciais mockadas
         // mas entramos anonimamente para ter um 'request.auth' válido no Firestore
-        const isAdminCreds = (email === "admin@fashionflow.com" && pass === "admin") || 
+        const isAdminCreds = (email === "admin@nexusflow.com" && pass === "admin") || 
                             (email === "jairobraganca2020@gmail.com" && pass === "Jairo@Braganca");
-        const isCashierCreds = email === "caixa@fashionflow.com" && pass === "caixa";
+        const isCashierCreds = email === "caixa@nexusflow.com" && pass === "caixa";
 
         if (isAdminCreds || isCashierCreds) {
           const newRole = isAdminCreds ? "ADM" : "CASHIER";
@@ -89,19 +85,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async () => {
-    setLoading(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(firebaseAuth, provider);
-      setLoading(false);
-      return { success: true };
-    } catch (error: any) {
-      setLoading(false);
-      return { success: false, message: error.message || "Erro ao entrar com Google." };
-    }
-  };
-
   const logout = async () => {
     await signOut(firebaseAuth);
     localStorage.removeItem('ff_user_role');
@@ -110,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAdmin = role === "ADM";
 
   return (
-    <AuthContext.Provider value={{ user, role, loading, isAdmin, login, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, role, loading, isAdmin, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
