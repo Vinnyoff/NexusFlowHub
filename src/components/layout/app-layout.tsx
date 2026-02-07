@@ -81,6 +81,30 @@ function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
+          {/* Módulo de Cadastro com Submódulos */}
+          {isAdmin && (
+            <Collapsible asChild defaultOpen={pathname === "/suppliers"} className="group/collapsible">
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton tooltip="Cadastro" className="w-full">
+                    <ClipboardList className="h-5 w-5" />
+                    <span className="font-semibold">Cadastro</span>
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/suppliers"}>
+                        <a href="/suppliers">Fornecedores</a>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          )}
+
           {/* Módulo de Estoque com Submódulos */}
           {isAdmin && (
             <Collapsible asChild defaultOpen={pathname.startsWith("/products") || pathname === "/import" || pathname === "/labels"} className="group/collapsible">
@@ -118,18 +142,6 @@ function AppSidebar() {
                 </CollapsibleContent>
               </SidebarMenuItem>
             </Collapsible>
-          )}
-
-          {/* Fornecedores */}
-          {isAdmin && (
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === "/suppliers"} tooltip="Fornecedores">
-                <a href="/suppliers">
-                  <Building2 className="h-5 w-5" />
-                  <span className="font-semibold">Fornecedores</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
           )}
 
           {/* Histórico */}
