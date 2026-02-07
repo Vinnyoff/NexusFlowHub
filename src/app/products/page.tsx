@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Trash2, Loader2, Package, Layers, Barcode as BarcodeIcon, Sparkles, Pencil, ScanBarcode, ClipboardList } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Package, Layers, Barcode as BarcodeIcon, Sparkles, Pencil, ScanBarcode, ClipboardList, Filter } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,10 +19,18 @@ import { useAuth } from "@/app/lib/auth-store";
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function ProductsPage() {
-  const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("principal");
+  
+  // Filtros individuais por coluna
+  const [filters, setFilters] = useState({
+    name: "",
+    internalCode: "",
+    barcode: "",
+    ncm: ""
+  });
+
   const [formData, setFormData] = useState({
     name: "",
     brand: "",
@@ -47,13 +55,14 @@ export default function ProductsPage() {
 
   const { data: products, isLoading } = useCollection(productsQuery);
 
-  const filteredProducts = products?.filter(p => 
-    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.barcode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.internalCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.ncm?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const filteredProducts = products?.filter(p => {
+    const matchesName = (p.name?.toLowerCase().includes(filters.name.toLowerCase()) || p.brand?.toLowerCase().includes(filters.name.toLowerCase()));
+    const matchesInternal = p.internalCode?.toLowerCase().includes(filters.internalCode.toLowerCase());
+    const matchesBarcode = p.barcode?.toLowerCase().includes(filters.barcode.toLowerCase());
+    const matchesNcm = p.ncm?.toLowerCase().includes(filters.ncm.toLowerCase());
+    
+    return matchesName && matchesInternal && matchesBarcode && matchesNcm;
+  }) || [];
 
   const calculateEAN8CheckDigit = (code: string) => {
     let sum = 0;
@@ -107,7 +116,6 @@ export default function ProductsPage() {
       return;
     }
 
-    // Geração automática do código interno se estiver vazio
     let finalInternalCode = formData.internalCode;
     if (!finalInternalCode) {
       const base = `${Math.floor(1000000 + Math.random() * 9000000)}`;
@@ -128,12 +136,12 @@ export default function ProductsPage() {
     };
 
     if (editingId) {
-      const docRef = doc(firestore, "products", editingId);
+      const docRef = doc(firestore!, "products", editingId);
       updateDocumentNonBlocking(docRef, productData);
       toast({ title: "Sucesso", description: "Produto atualizado." });
     } else {
       const productId = crypto.randomUUID();
-      const docRef = doc(firestore, "products", productId);
+      const docRef = doc(firestore!, "products", productId);
       setDocumentNonBlocking(docRef, { ...productData, id: productId }, { merge: true });
       toast({ 
         title: "Sucesso", 
@@ -343,17 +351,6 @@ export default function ProductsPage() {
         </div>
 
         <Card className="border-none shadow-prominent overflow-hidden rounded-2xl bg-card">
-          <CardHeader className="pb-4 border-b border-border/50 bg-muted/10">
-            <div className="relative">
-              <Search className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
-              <Input 
-                placeholder="Filtrar por nome, marca, códigos ou NCM..." 
-                className="pl-12 h-12 rounded-xl border-none bg-muted/20 focus-visible:ring-primary/20 text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -362,14 +359,67 @@ export default function ProductsPage() {
               </div>
             ) : (
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/10">
                   <TableRow className="hover:bg-transparent border-b border-border/50">
-                    <TableHead className="pl-6 h-14 text-[11px] uppercase tracking-widest font-bold">Produto</TableHead>
-                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Cód. / Fiscal</TableHead>
-                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Categoria</TableHead>
-                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Preço</TableHead>
-                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Estoque</TableHead>
-                    <TableHead className="text-right pr-6 h-14 text-[11px] uppercase tracking-widest font-bold">Ações</TableHead>
+                    <TableHead className="pl-6 h-auto py-4">
+                      <div className="space-y-2">
+                        <span className="text-[11px] uppercase tracking-widest font-bold">Produto</span>
+                        <div className="relative">
+                          <Search className="absolute left-2 top-2 h-3 w-3 text-muted-foreground" />
+                          <Input 
+                            placeholder="Filtrar..." 
+                            className="h-7 text-[10px] pl-7 bg-white/50"
+                            value={filters.name}
+                            onChange={(e) => setFilters({...filters, name: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                    </TableHead>
+                    <TableHead className="h-auto py-4">
+                      <div className="space-y-2">
+                        <span className="text-[11px] uppercase tracking-widest font-bold">Cód. Interno</span>
+                        <div className="relative">
+                          <Filter className="absolute left-2 top-2 h-3 w-3 text-muted-foreground" />
+                          <Input 
+                            placeholder="EAN-8..." 
+                            className="h-7 text-[10px] pl-7 bg-white/50 font-mono"
+                            value={filters.internalCode}
+                            onChange={(e) => setFilters({...filters, internalCode: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                    </TableHead>
+                    <TableHead className="h-auto py-4">
+                      <div className="space-y-2">
+                        <span className="text-[11px] uppercase tracking-widest font-bold">Cód. Fabricante</span>
+                        <div className="relative">
+                          <BarcodeIcon className="absolute left-2 top-2 h-3 w-3 text-muted-foreground" />
+                          <Input 
+                            placeholder="EAN-13..." 
+                            className="h-7 text-[10px] pl-7 bg-white/50 font-mono"
+                            value={filters.barcode}
+                            onChange={(e) => setFilters({...filters, barcode: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                    </TableHead>
+                    <TableHead className="h-auto py-4">
+                      <div className="space-y-2">
+                        <span className="text-[11px] uppercase tracking-widest font-bold">NCM</span>
+                        <div className="relative">
+                          <ClipboardList className="absolute left-2 top-2 h-3 w-3 text-muted-foreground" />
+                          <Input 
+                            placeholder="Fiscal..." 
+                            className="h-7 text-[10px] pl-7 bg-white/50 font-mono"
+                            value={filters.ncm}
+                            onChange={(e) => setFilters({...filters, ncm: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                    </TableHead>
+                    <TableHead className="h-auto py-4 text-[11px] uppercase tracking-widest font-bold">Preço</TableHead>
+                    <TableHead className="h-auto py-4 text-[11px] uppercase tracking-widest font-bold">Estoque</TableHead>
+                    <TableHead className="text-right pr-6 h-auto py-4 text-[11px] uppercase tracking-widest font-bold">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -378,33 +428,31 @@ export default function ProductsPage() {
                       <TableCell className="pl-6 py-4">
                         <div className="font-bold text-foreground text-sm">{product.name}</div>
                         <div className="text-[10px] text-muted-foreground uppercase tracking-tight">{product.brand} | {product.model || '-'}</div>
+                        <Badge variant="secondary" className="mt-1 rounded-md font-bold text-[8px] px-1 py-0 uppercase bg-muted text-muted-foreground border-none">
+                          {product.category || "Geral"}
+                        </Badge>
                       </TableCell>
                       <TableCell className="py-4">
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <Badge variant="outline" className="text-[10px] font-mono font-bold bg-primary/10 text-primary border-primary/20 px-1.5 h-5 uppercase tracking-tighter">
-                              INT: {product.internalCode}
-                            </Badge>
-                            {product.ncm && (
-                              <Badge variant="outline" className="text-[10px] font-mono font-bold bg-amber-500/10 text-amber-700 border-amber-500/20 px-1.5 h-5 uppercase tracking-tighter">
-                                NCM: {product.ncm}
-                              </Badge>
-                            )}
-                          </div>
-                          {product.barcode && (
-                            <div className="flex items-center gap-1 text-muted-foreground">
-                              <BarcodeIcon className="h-3 w-3" />
-                              <span className="text-[10px] font-mono font-medium tracking-tight">
-                                {product.barcode}
-                              </span>
-                            </div>
-                          )}
+                        <Badge variant="outline" className="text-[10px] font-mono font-bold bg-primary/10 text-primary border-primary/20 px-1.5 h-5 uppercase tracking-tighter">
+                          {product.internalCode || '---'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <BarcodeIcon className="h-3.5 w-3.5 opacity-50" />
+                          <span className="text-[11px] font-mono font-medium tracking-tight">
+                            {product.barcode || '---'}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="py-4">
-                        <Badge variant="secondary" className="rounded-md font-bold text-[10px] px-2 py-0 uppercase bg-muted text-muted-foreground border-none">
-                          {product.category || "Geral"}
-                        </Badge>
+                        {product.ncm ? (
+                          <Badge variant="outline" className="text-[10px] font-mono font-bold bg-amber-500/10 text-amber-700 border-amber-500/20 px-1.5 h-5 uppercase tracking-tighter">
+                            {product.ncm}
+                          </Badge>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground opacity-30">---</span>
+                        )}
                       </TableCell>
                       <TableCell className="py-4 font-black text-foreground">
                         R$ {product.price?.toFixed(2)}
@@ -439,7 +487,7 @@ export default function ProductsPage() {
                   ))}
                   {filteredProducts.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-32 opacity-30">
+                      <TableCell colSpan={7} className="text-center py-32 opacity-30">
                         <Package className="h-16 w-16 mx-auto mb-4" />
                         <p className="text-sm font-bold uppercase tracking-widest">Nenhum item localizado</p>
                       </TableCell>
