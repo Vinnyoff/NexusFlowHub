@@ -29,7 +29,8 @@ export default function LabelsPage() {
 
   const filteredProducts = products?.filter(p => 
     p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
+    p.barcode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.brand?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const handlePrint = () => {
@@ -50,7 +51,7 @@ export default function LabelsPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Buscar produto por nome ou código..." 
+                  placeholder="Buscar produto por nome, marca ou código..." 
                   className="pl-10 rounded-xl"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -81,7 +82,7 @@ export default function LabelsPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-[10px] uppercase font-bold">{product.brand}</Badge>
-                          <div className="text-xs text-muted-foreground mt-0.5">{product.size}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">{product.model || 'Padrão'}</div>
                         </TableCell>
                         <TableCell className="font-bold text-primary">R$ {product.price?.toFixed(2)}</TableCell>
                         <TableCell className="text-right pr-6">
@@ -131,7 +132,9 @@ export default function LabelsPage() {
                 <div className="p-4 border border-dashed rounded-xl bg-muted/20 flex flex-col items-center justify-center min-h-[180px]">
                   {selectedProduct ? (
                     <div className="text-center space-y-2">
-                      <p className="text-[10px] font-bold text-primary uppercase tracking-tight">{selectedProduct.name}</p>
+                      <p className="text-[10px] font-bold text-primary uppercase tracking-tight">
+                        {selectedProduct.brand} | {selectedProduct.name}
+                      </p>
                       <div className="bg-white p-2 border rounded shadow-sm scale-90 origin-center">
                         <Barcode 
                           value={selectedProduct.barcode} 
@@ -170,8 +173,7 @@ export default function LabelsPage() {
               <CardContent className="p-4 flex gap-3">
                 <FileText className="h-5 w-5 text-primary shrink-0" />
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  As etiquetas utilizam códigos reais compatíveis com leitores a laser e CCD. 
-                  Certifique-se de ajustar as margens para "Nenhuma" na visualização de impressão.
+                  As etiquetas exibem agora a <strong>Identificação de Marca</strong> e <strong>Modelo</strong> para melhor organização física.
                 </p>
               </CardContent>
             </Card>
@@ -189,6 +191,7 @@ export default function LabelsPage() {
             body {
               margin: 0;
               padding: 0;
+              background-color: white !important;
             }
           }
         `}} />
@@ -199,22 +202,34 @@ export default function LabelsPage() {
               className="border border-black p-2 w-[50mm] h-[30mm] flex flex-col items-center justify-between bg-white overflow-hidden"
               style={{ pageBreakInside: 'avoid' }}
             >
+              {/* Identificação de Marca */}
               <p className="text-[8px] font-black text-black uppercase text-center line-clamp-1 border-b border-black w-full pb-0.5 mb-1">
-                {selectedProduct?.brand || 'NexusFlow'}
+                {selectedProduct?.brand || 'NEXUSFLOW'}
               </p>
-              <p className="text-[10px] text-black text-center font-bold line-clamp-1">
-                {selectedProduct?.name} {selectedProduct?.size && `(${selectedProduct.size})`}
-              </p>
+              
+              {/* Nome do Produto e Modelo */}
+              <div className="text-center w-full">
+                <p className="text-[9px] text-black font-bold line-clamp-1 leading-tight">
+                  {selectedProduct?.name}
+                </p>
+                <p className="text-[7px] text-black font-medium line-clamp-1 opacity-80">
+                  {selectedProduct?.model || selectedProduct?.size || ''}
+                </p>
+              </div>
+
+              {/* Código de Barras Real */}
               <div className="flex flex-col items-center flex-1 justify-center py-1 scale-95">
                 <Barcode 
-                  value={selectedProduct?.barcode || "000000"} 
+                  value={selectedProduct?.barcode || "0000000000000"} 
                   width={1.2} 
-                  height={40} 
-                  fontSize={10}
+                  height={35} 
+                  fontSize={8}
                   margin={0}
                 />
               </div>
-              <p className="text-[14px] font-black text-black mt-1">
+
+              {/* Preço de Venda */}
+              <p className="text-[13px] font-black text-black mt-0.5">
                 R$ {selectedProduct?.price?.toFixed(2)}
               </p>
             </div>
