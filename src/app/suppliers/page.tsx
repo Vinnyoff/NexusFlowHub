@@ -21,8 +21,10 @@ export default function SuppliersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isFetchingCnpj, setIsFetchingCnpj] = useState(false);
+  const [isFetchingCep, setIsFetchingCep] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [lastConsultedCnpj, setLastConsultedCnpj] = useState("");
+  const [lastConsultedCep, setLastConsultedCep] = useState("");
   
   const [formData, setFormData] = useState({
     name: "",
@@ -102,7 +104,43 @@ export default function SuppliersPage() {
     }
   }, [formData.cnpj, lastConsultedCnpj, toast]);
 
-  // Efeito para disparar a consulta automática ao atingir 14 dígitos
+  const fetchCepData = useCallback(async (cepToFetch?: string) => {
+    const cep = cepToFetch || formData.zip;
+    const cleanCep = cep.replace(/\D/g, "");
+    
+    if (cleanCep.length !== 8) return;
+    if (cleanCep === lastConsultedCep) return;
+
+    setIsFetchingCep(true);
+    setLastConsultedCep(cleanCep);
+    
+    try {
+      const response = await fetch(`https://brasilapi.com.br/api/cep/v1/${cleanCep}`);
+      if (!response.ok) throw new Error("Não foi possível localizar o CEP.");
+      
+      const data = await response.json();
+      
+      setFormData(prev => ({
+        ...prev,
+        street: data.street || prev.street,
+        neighborhood: data.neighborhood || prev.neighborhood,
+        city: data.city || prev.city,
+        state: data.state || prev.state,
+      }));
+
+      toast({
+        title: "Endereço Localizado",
+        description: "Campos de localização preenchidos automaticamente."
+      });
+    } catch (error: any) {
+      console.error(error);
+      // Silenciosamente falha ou avisa se quiser
+    } finally {
+      setIsFetchingCep(false);
+    }
+  }, [formData.zip, lastConsultedCep, toast]);
+
+  // Efeito para disparar a consulta automática de CNPJ ao atingir 14 dígitos
   useEffect(() => {
     const cleanCnpj = formData.cnpj.replace(/\D/g, "");
     if (cleanCnpj.length === 14 && !isFetchingCnpj && cleanCnpj !== lastConsultedCnpj) {
@@ -110,10 +148,20 @@ export default function SuppliersPage() {
     }
   }, [formData.cnpj, isFetchingCnpj, lastConsultedCnpj, fetchCnpjData]);
 
+  // Efeito para disparar a consulta automática de CEP ao atingir 8 dígitos
+  useEffect(() => {
+    const cleanCep = formData.zip.replace(/\D/g, "");
+    if (cleanCep.length === 8 && !isFetchingCep && cleanCep !== lastConsultedCep) {
+      fetchCepData(cleanCep);
+    }
+  }, [formData.zip, isFetchingCep, lastConsultedCep, fetchCepData]);
+
   const handleEdit = (supplier: any) => {
     setEditingId(supplier.id);
     const cleanCnpj = (supplier.cnpj || "").replace(/\D/g, "");
+    const cleanCep = (supplier.zip || "").replace(/\D/g, "");
     setLastConsultedCnpj(cleanCnpj);
+    setLastConsultedCep(cleanCep);
     setFormData({
       name: supplier.name || "",
       fantasyName: supplier.fantasyName || "",
@@ -177,6 +225,7 @@ export default function SuppliersPage() {
   const resetForm = () => {
     setEditingId(null);
     setLastConsultedCnpj("");
+    setLastConsultedCep("");
     setFormData({ 
       name: "", 
       fantasyName: "", 
@@ -300,7 +349,10 @@ export default function SuppliersPage() {
                 </div>
 
                 <div className="space-y-2 md:col-span-1">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">CEP</Label>
+                  <div className="flex items-center justify-between pl-1">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">CEP</Label>
+                    {isFetchingCep && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+                  </div>
                   <Input 
                     placeholder="00000-000" 
                     value={formData.zip}
@@ -373,7 +425,7 @@ export default function SuppliersPage() {
 
               <DialogFooter className="border-t border-border/50 pt-5 mt-2">
                 <Button type="button" variant="ghost" className="rounded-xl h-11 px-6" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-                <Button type="button" className="rounded-xl h-11 px-8 bg-primary hover:bg-accent shadow-lg shadow-primary/20 font-bold" onClick={handleSaveSupplier} disabled={isFetchingCnpj}>
+                <Button type="button" className="rounded-xl h-11 px-8 bg-primary hover:bg-accent shadow-lg shadow-primary/20 font-bold" onClick={handleSaveSupplier} disabled={isFetchingCnpj || isFetchingCep}>
                   {editingId ? "Salvar Alterações" : "Concluir Cadastro"}
                 </Button>
               </DialogFooter>
