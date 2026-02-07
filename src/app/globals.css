@@ -60,6 +60,14 @@
     --border: 256 30% 20%;
     --input: 256 30% 20%;
     --ring: 256 63% 59%;
+    --sidebar-background: 256 43% 12%;
+    --sidebar-foreground: 256 20% 98%;
+    --sidebar-primary: 256 63% 59%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 256 30% 20%;
+    --sidebar-accent-foreground: 256 63% 60%;
+    --sidebar-border: 256 30% 20%;
+    --sidebar-ring: 256 63% 59%;
   }
 }
 
