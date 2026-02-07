@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Product": {
@@ -41,7 +42,11 @@
         },
         "barcode": {
           "type": "string",
-          "description": "The barcode for the product."
+          "description": "The original manufacturer barcode (EAN-13 or other)."
+        },
+        "internalCode": {
+          "type": "string",
+          "description": "The system-generated internal code (EAN-8)."
         }
       },
       "required": [
@@ -52,7 +57,7 @@
         "size",
         "price",
         "quantity",
-        "barcode"
+        "internalCode"
       ]
     },
     "Sale": {

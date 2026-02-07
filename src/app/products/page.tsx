@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Trash2, Loader2, Package, Layers, Barcode as BarcodeIcon, Sparkles, Pencil } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Package, Layers, Barcode as BarcodeIcon, Sparkles, Pencil, ScanBarcode } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,7 +31,8 @@ export default function ProductsPage() {
     stock: "",
     variant: "Padrão",
     category: "Geral",
-    barcode: ""
+    barcode: "",
+    internalCode: ""
   });
   
   const firestore = useFirestore();
@@ -48,7 +49,8 @@ export default function ProductsPage() {
   const filteredProducts = products?.filter(p => 
     p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
     p.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
+    p.barcode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.internalCode?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const calculateEAN8CheckDigit = (code: string) => {
@@ -61,13 +63,13 @@ export default function ProductsPage() {
     return remainder === 0 ? 0 : 10 - remainder;
   };
 
-  const handleGenerateBarcode = () => {
+  const handleGenerateInternalCode = () => {
     const base = `${Math.floor(1000000 + Math.random() * 9000000)}`;
     const checkDigit = calculateEAN8CheckDigit(base);
     const fullCode = base + checkDigit;
     
-    setFormData({ ...formData, barcode: fullCode });
-    toast({ title: "Código Gerado", description: `EAN-8 interno: ${fullCode}` });
+    setFormData({ ...formData, internalCode: fullCode });
+    toast({ title: "Código Interno Gerado", description: `EAN-8: ${fullCode}` });
   };
 
   const handleEdit = (product: any) => {
@@ -80,7 +82,8 @@ export default function ProductsPage() {
       stock: product.quantity?.toString() || "",
       variant: product.size || "Padrão",
       category: product.category || "Geral",
-      barcode: product.barcode || ""
+      barcode: product.barcode || "",
+      internalCode: product.internalCode || ""
     });
     setIsDialogOpen(true);
     setActiveTab("principal");
@@ -101,11 +104,11 @@ export default function ProductsPage() {
       return;
     }
 
-    // Geração automática se o campo estiver vazio
-    let finalBarcode = formData.barcode;
-    if (!finalBarcode) {
+    // Geração automática do código interno se estiver vazio
+    let finalInternalCode = formData.internalCode;
+    if (!finalInternalCode) {
       const base = `${Math.floor(1000000 + Math.random() * 9000000)}`;
-      finalBarcode = base + calculateEAN8CheckDigit(base);
+      finalInternalCode = base + calculateEAN8CheckDigit(base);
     }
 
     const productData: any = {
@@ -116,7 +119,8 @@ export default function ProductsPage() {
       size: formData.variant,
       price: parseFloat(formData.price) || 0,
       quantity: parseInt(formData.stock) || 0,
-      barcode: finalBarcode
+      barcode: formData.barcode || "",
+      internalCode: finalInternalCode
     };
 
     if (editingId) {
@@ -129,7 +133,7 @@ export default function ProductsPage() {
       setDocumentNonBlocking(docRef, { ...productData, id: productId }, { merge: true });
       toast({ 
         title: "Sucesso", 
-        description: `Produto cadastrado com código interno ${finalBarcode}.` 
+        description: `Produto cadastrado. Código Interno: ${finalInternalCode}` 
       });
     }
     
@@ -147,7 +151,8 @@ export default function ProductsPage() {
       stock: "", 
       variant: "Padrão",
       category: "Geral",
-      barcode: ""
+      barcode: "",
+      internalCode: ""
     });
   };
 
@@ -164,7 +169,7 @@ export default function ProductsPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-headline font-bold text-primary">Gestão de Estoque</h1>
-            <p className="text-muted-foreground">Administre seus produtos e gere códigos internos automaticamente.</p>
+            <p className="text-muted-foreground">Administre seu inventário com códigos internos e de fábrica separados.</p>
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -190,7 +195,7 @@ export default function ProductsPage() {
                     <Layers className="h-4 w-4 mr-2" /> Identificação
                   </TabsTrigger>
                   <TabsTrigger value="detalhes" className="rounded-lg font-bold text-[11px] uppercase tracking-wider">
-                    <Package className="h-4 w-4 mr-2" /> Dados Fiscais/EAN
+                    <ScanBarcode className="h-4 w-4 mr-2" /> Códigos / Fiscal
                   </TabsTrigger>
                 </TabsList>
 
@@ -247,51 +252,61 @@ export default function ProductsPage() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="detalhes" className="col-span-2 m-0 grid grid-cols-2 gap-5">
-                    <div className="space-y-2 col-span-2">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Leitura / Código EAN-8 Interno</Label>
+                  <TabsContent value="detalhes" className="col-span-2 m-0 space-y-5">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Código de Barras Original (EAN-13)</Label>
+                      <div className="relative">
+                        <BarcodeIcon className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
+                        <Input 
+                          placeholder="Escaneie o código de fábrica..." 
+                          value={formData.barcode}
+                          onChange={e => setFormData({...formData, barcode: e.target.value})}
+                          className="rounded-xl border-primary/10 h-12 pl-12 text-sm bg-muted/20"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Código Interno de Etiqueta (EAN-8)</Label>
                       <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <BarcodeIcon className="absolute left-4 top-3.5 h-5 w-5 text-primary opacity-50" />
-                          <Input 
-                            placeholder="Escaneie ou deixe em branco para gerar..." 
-                            value={formData.barcode}
-                            onChange={e => setFormData({...formData, barcode: e.target.value})}
-                            className="rounded-xl border-primary/10 h-12 pl-12 text-sm bg-muted/20 font-mono"
-                            maxLength={8}
-                          />
-                        </div>
+                        <Input 
+                          placeholder="Gerado automaticamente..." 
+                          value={formData.internalCode}
+                          onChange={e => setFormData({...formData, internalCode: e.target.value})}
+                          className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20 font-mono"
+                          maxLength={8}
+                        />
                         <Button 
                           type="button" 
                           variant="outline" 
-                          className="h-12 rounded-xl border-dashed gap-2 text-xs border-primary/30 hover:bg-primary/5"
-                          onClick={handleGenerateBarcode}
+                          className="h-12 rounded-xl border-dashed gap-2 text-xs"
+                          onClick={handleGenerateInternalCode}
                         >
                           <Sparkles className="h-4 w-4 text-primary" />
-                          Gerar Novo
+                          Gerar
                         </Button>
                       </div>
-                      <p className="text-[9px] text-muted-foreground italic pl-1">
-                        * Se vazio, o sistema gera um código de 8 dígitos para etiquetas internas.
-                      </p>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Modelo / SKU</Label>
-                      <Input 
-                        placeholder="Ex: MOD-2024" 
-                        value={formData.model}
-                        onChange={e => setFormData({...formData, model: e.target.value})}
-                        className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Variante / Tamanho</Label>
-                      <Input 
-                        placeholder="Ex: GG" 
-                        value={formData.variant}
-                        onChange={e => setFormData({...formData, variant: e.target.value})}
-                        className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
-                      />
+
+                    <div className="grid grid-cols-2 gap-5">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Modelo / SKU</Label>
+                        <Input 
+                          placeholder="Ex: MOD-2024" 
+                          value={formData.model}
+                          onChange={e => setFormData({...formData, model: e.target.value})}
+                          className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Tamanho / Var</Label>
+                        <Input 
+                          placeholder="Ex: M" 
+                          value={formData.variant}
+                          onChange={e => setFormData({...formData, variant: e.target.value})}
+                          className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
+                        />
+                      </div>
                     </div>
                   </TabsContent>
                 </div>
@@ -312,7 +327,7 @@ export default function ProductsPage() {
             <div className="relative">
               <Search className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
               <Input 
-                placeholder="Filtrar por nome, código, marca ou categoria..." 
+                placeholder="Filtrar por nome, marca, código interno ou barras..." 
                 className="pl-12 h-12 rounded-xl border-none bg-muted/20 focus-visible:ring-primary/20 text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -330,9 +345,8 @@ export default function ProductsPage() {
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-b border-border/50">
                     <TableHead className="pl-6 h-14 text-[11px] uppercase tracking-widest font-bold">Produto</TableHead>
-                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Identificação</TableHead>
+                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Códigos de Identificação</TableHead>
                     <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Categoria</TableHead>
-                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold text-center">Variante</TableHead>
                     <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Preço</TableHead>
                     <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Estoque</TableHead>
                     <TableHead className="text-right pr-6 h-14 text-[11px] uppercase tracking-widest font-bold">Ações</TableHead>
@@ -343,19 +357,24 @@ export default function ProductsPage() {
                     <TableRow key={product.id} className="group hover:bg-primary/[0.02] transition-colors border-b border-border/30">
                       <TableCell className="pl-6 py-4">
                         <div className="font-bold text-foreground text-sm">{product.name}</div>
-                        <div className="text-[10px] text-primary font-mono bg-primary/5 px-2 py-0.5 rounded inline-block mt-1">EAN-8: {product.barcode}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-tight">{product.brand} | {product.model || '-'}</div>
                       </TableCell>
                       <TableCell className="py-4">
-                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight">{product.brand}</div>
-                        <div className="text-xs font-medium text-foreground/80">{product.model || '-'}</div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-[9px] h-4 font-mono uppercase bg-primary/5 text-primary border-primary/20">INT: {product.internalCode}</Badge>
+                          </div>
+                          {product.barcode && (
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-[9px] h-4 font-mono uppercase bg-muted text-muted-foreground border-none">EAN: {product.barcode}</Badge>
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="py-4">
                         <Badge variant="secondary" className="rounded-md font-bold text-[10px] px-2 py-0 uppercase bg-muted text-muted-foreground border-none">
                           {product.category || "Geral"}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="py-4 text-center">
-                        <span className="text-xs font-black bg-muted/50 px-2 py-1 rounded border">{product.size}</span>
                       </TableCell>
                       <TableCell className="py-4 font-black text-foreground">
                         R$ {product.price?.toFixed(2)}
@@ -371,18 +390,16 @@ export default function ProductsPage() {
                           <Button 
                             size="icon" 
                             variant="ghost" 
-                            className="h-9 w-9 text-primary hover:bg-primary/10 rounded-lg transition-all"
+                            className="h-9 w-9 text-primary hover:bg-primary/10 rounded-lg"
                             onClick={() => handleEdit(product)}
-                            title="Editar"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button 
                             size="icon" 
                             variant="ghost" 
-                            className="h-9 w-9 text-destructive hover:bg-destructive/10 rounded-lg transition-all"
+                            className="h-9 w-9 text-destructive hover:bg-destructive/10 rounded-lg"
                             onClick={() => handleDelete(product.id)}
-                            title="Excluir"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -392,11 +409,9 @@ export default function ProductsPage() {
                   ))}
                   {filteredProducts.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-32">
-                        <div className="flex flex-col items-center gap-3 opacity-30">
-                          <Package className="h-16 w-16" />
-                          <p className="text-sm font-bold uppercase tracking-widest">Nenhum item localizado</p>
-                        </div>
+                      <TableCell colSpan={6} className="text-center py-32 opacity-30">
+                        <Package className="h-16 w-16 mx-auto mb-4" />
+                        <p className="text-sm font-bold uppercase tracking-widest">Nenhum item localizado</p>
                       </TableCell>
                     </TableRow>
                   )}

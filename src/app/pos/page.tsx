@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ShoppingCart, Barcode, Trash2, CheckCircle2, CreditCard, Banknote, QrCode, Loader2, Plus, Minus } from "lucide-react";
+import { ShoppingCart, Barcode, Trash2, CheckCircle2, CreditCard, Banknote, QrCode, Loader2, Plus, Minus, ScanBarcode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
@@ -19,6 +19,7 @@ interface CartItem {
   price: number;
   quantity: number;
   barcode: string;
+  internalCode: string;
 }
 
 export default function POSPage() {
@@ -40,8 +41,9 @@ export default function POSPage() {
 
   const { data: products, isLoading: isLoadingProducts } = useCollection(productsQuery);
 
-  const addToCart = (barcode: string) => {
-    const product = products?.find(p => p.barcode === barcode || p.id === barcode);
+  const addToCart = (code: string) => {
+    // Busca por código interno (EAN-8) ou código original (EAN-13)
+    const product = products?.find(p => p.internalCode === code || p.barcode === code || p.id === code);
     
     if (product) {
       setCart(prev => {
@@ -55,7 +57,8 @@ export default function POSPage() {
           size: product.size, 
           price: product.price, 
           quantity: 1,
-          barcode: product.barcode
+          barcode: product.barcode,
+          internalCode: product.internalCode
         }];
       });
       setBarcodeInput("");
@@ -93,7 +96,6 @@ export default function POSPage() {
     
     try {
       const saleId = crypto.randomUUID();
-      // Usando caminhos explícitos para garantir que a referência do Firestore seja sempre válida
       const saleDocRef = doc(firestore, "users", user.uid, "sales", saleId);
 
       const saleData = {
@@ -110,7 +112,6 @@ export default function POSPage() {
       batch.set(saleDocRef, saleData);
 
       cart.forEach(item => {
-        // Referência explícita para cada item da venda
         const saleItemId = crypto.randomUUID();
         const itemRef = doc(firestore, "users", user.uid, "sales", saleId, "saleItems", saleItemId);
         batch.set(itemRef, {
@@ -148,8 +149,8 @@ export default function POSPage() {
           <Card className="border-none shadow-sm">
             <CardHeader>
               <CardTitle className="font-headline flex items-center gap-2">
-                <Barcode className="h-6 w-6 text-primary" />
-                Leitura de Código
+                <ScanBarcode className="h-6 w-6 text-primary" />
+                Leitura de Código (Interno ou Fábrica)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -157,11 +158,12 @@ export default function POSPage() {
                 <div className="relative flex-1">
                   <Input 
                     ref={inputRef}
-                    placeholder="Passe o leitor ou digite o código..." 
+                    placeholder="Passe o leitor de barras..." 
                     value={barcodeInput}
                     onChange={(e) => setBarcodeInput(e.target.value)}
                     className="text-lg h-12"
                     disabled={isLoadingProducts}
+                    autoFocus
                   />
                   <div className="absolute right-3 top-3.5 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
                     ENTER para adicionar
@@ -180,9 +182,9 @@ export default function POSPage() {
                     variant="outline" 
                     size="sm" 
                     className="text-xs border-dashed"
-                    onClick={() => addToCart(p.barcode || p.id)}
+                    onClick={() => addToCart(p.internalCode || p.barcode || p.id)}
                   >
-                    {p.name} ({p.size})
+                    {p.name}
                   </Button>
                 ))}
               </div>
@@ -217,39 +219,24 @@ export default function POSPage() {
                     {cart.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell>
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-xs text-muted-foreground">Tam: {item.size} • {item.barcode}</div>
+                          <div className="font-medium text-sm">{item.name}</div>
+                          <div className="text-[10px] text-muted-foreground">INT: {item.internalCode} {item.size !== "Padrão" && `• Tam: ${item.size}`}</div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => updateQuantity(item.id, -1)}
-                            >
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={() => updateQuantity(item.id, -1)}>
                               <Minus className="h-3 w-3" />
                             </Button>
                             <span className="font-bold min-w-[20px] text-center">{item.quantity}</span>
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-8 w-8 rounded-full"
-                              onClick={() => updateQuantity(item.id, 1)}
-                            >
+                            <Button variant="outline" size="icon" className="h-7 w-7 rounded-full" onClick={() => updateQuantity(item.id, 1)}>
                               <Plus className="h-3 w-3" />
                             </Button>
                           </div>
                         </TableCell>
-                        <TableCell>R$ {item.price.toFixed(2)}</TableCell>
-                        <TableCell className="font-bold">R$ {(item.price * item.quantity).toFixed(2)}</TableCell>
+                        <TableCell className="text-sm font-medium">R$ {item.price.toFixed(2)}</TableCell>
+                        <TableCell className="font-bold text-sm">R$ {(item.price * item.quantity).toFixed(2)}</TableCell>
                         <TableCell className="text-right">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-destructive h-8 w-8"
-                            onClick={() => removeItem(item.id)}
-                          >
+                          <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeItem(item.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -283,42 +270,22 @@ export default function POSPage() {
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <div className="grid grid-cols-3 gap-2 w-full">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setPaymentMethod("CARD")}
-                  className={`bg-transparent border-white/40 text-white hover:bg-white/20 flex flex-col h-16 gap-1 ${paymentMethod === "CARD" ? "bg-white/20 border-white ring-2 ring-white/50" : ""}`}
-                >
+                <Button variant="outline" onClick={() => setPaymentMethod("CARD")} className={`bg-transparent border-white/40 text-white hover:bg-white/20 flex flex-col h-16 gap-1 ${paymentMethod === "CARD" ? "bg-white/20 border-white ring-2 ring-white/50" : ""}`}>
                   <CreditCard className="h-5 w-5" />
                   <span className="text-[10px] font-bold">Cartão</span>
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setPaymentMethod("CASH")}
-                  className={`bg-transparent border-white/40 text-white hover:bg-white/20 flex flex-col h-16 gap-1 ${paymentMethod === "CASH" ? "bg-white/20 border-white ring-2 ring-white/50" : ""}`}
-                >
+                <Button variant="outline" onClick={() => setPaymentMethod("CASH")} className={`bg-transparent border-white/40 text-white hover:bg-white/20 flex flex-col h-16 gap-1 ${paymentMethod === "CASH" ? "bg-white/20 border-white ring-2 ring-white/50" : ""}`}>
                   <Banknote className="h-5 w-5" />
                   <span className="text-[10px] font-bold">Dinheiro</span>
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setPaymentMethod("PIX")}
-                  className={`bg-transparent border-white/40 text-white hover:bg-white/20 flex flex-col h-16 gap-1 ${paymentMethod === "PIX" ? "bg-white/20 border-white ring-2 ring-white/50" : ""}`}
-                >
+                <Button variant="outline" onClick={() => setPaymentMethod("PIX")} className={`bg-transparent border-white/40 text-white hover:bg-white/20 flex flex-col h-16 gap-1 ${paymentMethod === "PIX" ? "bg-white/20 border-white ring-2 ring-white/50" : ""}`}>
                   <QrCode className="h-5 w-5" />
                   <span className="text-[10px] font-bold">Pix</span>
                 </Button>
               </div>
 
-              <Button 
-                onClick={finalizeSale}
-                className="w-full bg-white text-primary hover:bg-white/90 text-lg font-bold h-14"
-                disabled={cart.length === 0 || isProcessing}
-              >
-                {isProcessing ? (
-                  <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="mr-2 h-6 w-6" />
-                )}
+              <Button onClick={finalizeSale} className="w-full bg-white text-primary hover:bg-white/90 text-lg font-bold h-14" disabled={cart.length === 0 || isProcessing}>
+                {isProcessing ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <CheckCircle2 className="mr-2 h-6 w-6" />}
                 FINALIZAR VENDA
               </Button>
             </CardFooter>
