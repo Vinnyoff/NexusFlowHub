@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shirt, Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { LayoutGrid, Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "./lib/auth-store";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
@@ -52,12 +52,12 @@ export default function LoginPage() {
       <div className="w-full max-w-[350px] space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="flex flex-col items-center text-center space-y-2">
           <div className="bg-primary p-3 rounded-2xl shadow-xl shadow-primary/20">
-            <Shirt className="h-8 w-8 text-white" />
+            <LayoutGrid className="h-8 w-8 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-headline font-bold text-primary tracking-tight">FashionFlow</h1>
+            <h1 className="text-2xl font-headline font-bold text-primary tracking-tight">NexusFlow</h1>
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] opacity-60">
-              Sistema de Gestão
+              Gestão Inteligente
             </p>
           </div>
         </div>
@@ -74,12 +74,12 @@ export default function LoginPage() {
 
               <div className="space-y-1">
                 <Label htmlFor="email" className="text-[10px] font-bold uppercase text-muted-foreground ml-1">
-                  E-mail
+                  Usuário ou E-mail
                 </Label>
                 <Input 
                   id="email"
                   type="email" 
-                  placeholder="seu@email.com" 
+                  placeholder="admin@nexusflow.com" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="rounded-xl border-primary/10 h-11 focus:ring-primary/20 transition-all"
@@ -119,7 +119,7 @@ export default function LoginPage() {
                 {isLoggingIn ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  "ENTRAR"
+                  "ENTRAR NO SISTEMA"
                 )}
               </Button>
             </form>
@@ -148,14 +148,14 @@ export default function LoginPage() {
             
             <div className="mt-6 pt-6 border-t border-border/50 text-center">
               <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest opacity-60">
-                Acesso verificado para ADM ou Caixa
+                Acesso corporativo verificado
               </p>
             </div>
           </CardContent>
         </Card>
         
         <p className="text-center text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-40">
-          &copy; 2024 FashionFlow Studio
+          &copy; 2024 NexusFlow Enterprise
         </p>
       </div>
     </div>

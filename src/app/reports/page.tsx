@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -13,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 
 const chartConfig = {
   total: {
-    label: "Faturamento",
+    label: "Receita",
     color: "hsl(var(--primary))",
   },
 } satisfies ChartConfig;
@@ -33,18 +32,18 @@ export default function ReportsPage() {
   ];
 
   const topProducts = [
-    { name: "Camiseta Basic", sales: 85, color: "hsl(var(--primary))" },
-    { name: "Calça Jeans Slim", sales: 62, color: "hsl(var(--chart-2))" },
-    { name: "Meias Algodão", sales: 45, color: "hsl(var(--chart-3))" },
-    { name: "Jaqueta Couro", sales: 12, color: "hsl(var(--chart-4))" },
+    { name: "Produto Principal", sales: 85, color: "hsl(var(--primary))" },
+    { name: "Item Secundário", sales: 62, color: "hsl(var(--chart-2))" },
+    { name: "Acessório A", sales: 45, color: "hsl(var(--chart-3))" },
+    { name: "Insumo Especial", sales: 12, color: "hsl(var(--chart-4))" },
   ];
 
   const handleAiSuggestions = async () => {
     setIsAiLoading(true);
     try {
       const input = {
-        salesHistory: "Camiseta Basic (M): 40 sold last week. Calça Jeans Slim (42): 15 sold last week. Jaqueta Couro (P): 1 sold last week.",
-        stockLevels: "Camiseta Basic (M): 5 items. Calça Jeans Slim (42): 2 items. Jaqueta Couro (P): 12 items."
+        salesHistory: "Item A: 40 sold last week. Item B: 15 sold last week. Item C: 1 sold last week.",
+        stockLevels: "Item A: 5 items. Item B: 2 items. Item C: 12 items."
       };
       const result = await generateRestockSuggestions(input);
       setAiSuggestions(result.restockSuggestions);
@@ -60,8 +59,8 @@ export default function ReportsPage() {
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-headline font-bold text-primary">Relatórios e Inteligência</h1>
-            <p className="text-muted-foreground">Analise o desempenho da loja e previsões de estoque.</p>
+            <h1 className="text-3xl font-headline font-bold text-primary">Análise e Desempenho</h1>
+            <p className="text-muted-foreground">Monitoramento de métricas e previsões inteligentes.</p>
           </div>
         </div>
 
@@ -69,7 +68,7 @@ export default function ReportsPage() {
           <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
             <CardHeader className="bg-primary/5 border-b border-primary/10">
               <CardTitle className="font-headline flex items-center gap-2 text-primary">
-                <TrendingUp className="h-5 w-5" /> Faturamento Semanal
+                <TrendingUp className="h-5 w-5" /> Receita Operacional Semanal
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
@@ -99,14 +98,14 @@ export default function ReportsPage() {
           <Card className="border-none shadow-sm overflow-hidden border-l-4 border-l-primary">
             <CardHeader>
               <CardTitle className="font-headline flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" /> Sugestões AI FashionFlow
+                <Sparkles className="h-5 w-5 text-primary" /> Sugestões NexusIA
               </CardTitle>
-              <CardDescription>Otimização de estoque baseada em tendências.</CardDescription>
+              <CardDescription>Otimização de reposição baseada em dados.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {aiSuggestions ? (
                 <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                  <p className="text-sm font-medium mb-3">Recomendações de Reposição:</p>
+                  <p className="text-sm font-medium mb-3">Recomendações de Compra:</p>
                   <div className="space-y-2">
                     {aiSuggestions.split(',').map((item, idx) => (
                       <div key={idx} className="flex justify-between items-center text-sm p-2 bg-white rounded border border-primary/10">
@@ -123,11 +122,11 @@ export default function ReportsPage() {
                     <Sparkles className="h-8 w-8 text-primary opacity-40" />
                   </div>
                   <p className="text-sm text-muted-foreground px-4 italic">
-                    Nossa IA analisa seu histórico para sugerir as quantidades ideais de reposição.
+                    Nossa IA analisa seu histórico operacional para sugerir os níveis ideais de estoque.
                   </p>
                   <Button onClick={handleAiSuggestions} disabled={isAiLoading} className="w-full bg-primary hover:bg-accent text-white gap-2">
                     {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    Gerar Sugestões
+                    Analisar Inventário
                   </Button>
                 </div>
               )}
@@ -138,7 +137,7 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle className="font-headline">Mais Vendidos por Categoria</CardTitle>
+              <CardTitle className="font-headline">Principais Itens por Volume</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
@@ -160,7 +159,7 @@ export default function ReportsPage() {
           <Card className="border-none shadow-sm">
             <CardHeader>
               <CardTitle className="font-headline text-destructive flex items-center gap-2">
-                <AlertCircle className="h-5 w-5" /> Alerta de Estoque Crítico
+                <AlertCircle className="h-5 w-5" /> Alerta de Ruptura de Estoque
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -171,11 +170,11 @@ export default function ReportsPage() {
                       <ShoppingCart className="h-4 w-4" />
                     </div>
                     <div>
-                      <p className="font-medium">Calça Jeans Slim (42)</p>
+                      <p className="font-medium">Item Especial 04</p>
                       <p className="text-xs text-muted-foreground">Restam apenas 2 unidades</p>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline">Repor</Button>
+                  <Button size="sm" variant="outline">Pedir</Button>
                 </div>
                 <div className="p-3 border rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -183,11 +182,11 @@ export default function ReportsPage() {
                       <ShoppingCart className="h-4 w-4" />
                     </div>
                     <div>
-                      <p className="font-medium">Camiseta Basic (M)</p>
+                      <p className="font-medium">Insumo Base X</p>
                       <p className="text-xs text-muted-foreground">Restam apenas 5 unidades</p>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline">Repor</Button>
+                  <Button size="sm" variant="outline">Pedir</Button>
                 </div>
               </div>
             </CardContent>

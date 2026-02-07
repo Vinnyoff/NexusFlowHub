@@ -1,4 +1,3 @@
-
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
@@ -6,8 +5,8 @@ import { AuthProvider } from "./lib/auth-store";
 import { FirebaseClientProvider } from "@/firebase";
 
 export const metadata: Metadata = {
-  title: 'FashionFlow - Sistema de Gestão de Moda',
-  description: 'Sistema moderno e intuitivo de controle de produtos e vendas para boutiques de moda.',
+  title: 'NexusFlow - Sistema de Gestão Empresarial',
+  description: 'Sistema moderno e intuitivo de controle de estoque e vendas para empresas e comércios.',
 };
 
 export default function RootLayout({
@@ -20,7 +19,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Outfit:wght@400;700&display=swap" rel="stylesheet" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

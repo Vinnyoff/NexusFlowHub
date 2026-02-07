@@ -1,10 +1,9 @@
-
 "use client";
 
 import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  ShoppingBag, 
+  BarChart3, 
   TrendingUp, 
   Package, 
   AlertTriangle, 
@@ -22,13 +21,13 @@ export default function Dashboard() {
     <AppLayout>
       <div className="space-y-8 max-w-7xl mx-auto">
         <div>
-          <h1 className="text-4xl font-headline font-bold text-primary mb-2 tracking-tight">Painel de Controle</h1>
-          <p className="text-muted-foreground">Bem-vindo à gestão inteligente da sua boutique.</p>
+          <h1 className="text-4xl font-headline font-bold text-primary mb-2 tracking-tight">Painel Operacional</h1>
+          <p className="text-muted-foreground">Gestão em tempo real do seu negócio.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
-            title="Vendas Hoje" 
+            title="Faturamento Hoje" 
             value="R$ 4.250,00" 
             icon={TrendingUp} 
             trend="+12% em relação a ontem"
@@ -36,26 +35,26 @@ export default function Dashboard() {
             bgColor="bg-emerald-100"
           />
           <StatCard 
-            title="Pedidos" 
+            title="Transações" 
             value="24" 
-            icon={ShoppingBag} 
-            trend="Ticket Médio: R$ 177,00"
+            icon={BarChart3} 
+            trend="Ticket Médio: R$ 177,08"
             color="text-primary"
             bgColor="bg-primary/10"
           />
           <StatCard 
-            title="Estoque" 
+            title="Itens em Estoque" 
             value="1.248" 
             icon={Package} 
-            trend="5 novos itens hoje"
+            trend="5 novas entradas hoje"
             color="text-blue-600"
             bgColor="bg-blue-100"
           />
           <StatCard 
-            title="Alertas" 
+            title="Alertas Críticos" 
             value="12" 
             icon={AlertTriangle} 
-            trend="Itens com baixo estoque"
+            trend="Reposição necessária"
             color="text-amber-600"
             bgColor="bg-amber-100"
           />
@@ -64,7 +63,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
             <CardHeader className="bg-muted/30">
-              <CardTitle className="font-headline text-xl">Vendas Recentes</CardTitle>
+              <CardTitle className="font-headline text-xl">Fluxo de Caixa Recente</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border">
@@ -75,8 +74,8 @@ export default function Dashboard() {
                         #{1024 + i}
                       </div>
                       <div>
-                        <p className="font-semibold text-sm">Venda Online</p>
-                        <p className="text-xs text-muted-foreground">Há {i * 10} minutos • Pix</p>
+                        <p className="font-semibold text-sm">Venda Registrada</p>
+                        <p className="text-xs text-muted-foreground">Há {i * 10} minutos • Concluído</p>
                       </div>
                     </div>
                     <span className="font-bold text-primary">R$ {i * 89},90</span>
@@ -88,13 +87,13 @@ export default function Dashboard() {
 
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle className="font-headline text-xl text-center">Acesso Rápido</CardTitle>
+              <CardTitle className="font-headline text-xl text-center">Ações Rápidas</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-3">
-              <QuickAction icon={ShoppingCart} label="Novo Pedido (PDV)" href="/pos" />
-              <QuickAction icon={Package} label="Gerenciar Estoque" href="/products" />
-              {isAdmin && <QuickAction icon={PieChart} label="Relatórios IA" href="/reports" />}
-              <QuickAction icon={History} label="Histórico Completo" href="/history" />
+              <QuickAction icon={ShoppingCart} label="Ponto de Venda (PDV)" href="/pos" />
+              <QuickAction icon={Package} label="Controle de Inventário" href="/products" />
+              {isAdmin && <QuickAction icon={PieChart} label="Análise com IA" href="/reports" />}
+              <QuickAction icon={History} label="Histórico de Operações" href="/history" />
             </CardContent>
           </Card>
         </div>

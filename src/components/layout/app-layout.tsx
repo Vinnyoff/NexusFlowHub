@@ -1,10 +1,8 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset, SidebarRail } from "@/components/ui/sidebar";
-import { Shirt, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon } from "lucide-react";
-import Link from "next/navigation";
+import { LayoutGrid, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/lib/auth-store";
 import { Button } from "@/components/ui/button";
@@ -53,10 +51,10 @@ function AppSidebar() {
 
   const menuItems = [
     { title: "Painel", icon: LayoutDashboard, url: "/dashboard", roles: ["ADM", "CASHIER"] },
-    { title: "Caixa", icon: ShoppingCart, url: "/pos", roles: ["ADM", "CASHIER"] },
-    { title: "Estoque", icon: Package, url: "/products", roles: ["ADM"] },
-    { title: "Vendas", icon: History, url: "/history", roles: ["ADM", "CASHIER"] },
-    { title: "Relatórios", icon: PieChart, url: "/reports", roles: ["ADM"] },
+    { title: "PDV", icon: ShoppingCart, url: "/pos", roles: ["ADM", "CASHIER"] },
+    { title: "Inventário", icon: Package, url: "/products", roles: ["ADM"] },
+    { title: "Histórico", icon: History, url: "/history", roles: ["ADM", "CASHIER"] },
+    { title: "Análise", icon: PieChart, url: "/reports", roles: ["ADM"] },
   ];
 
   const visibleItems = menuItems.filter(item => item.roles.includes(role || "CASHIER"));
@@ -65,9 +63,9 @@ function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border bg-sidebar shadow-xl">
       <SidebarHeader className="p-4 flex items-center justify-center overflow-hidden">
         <div className="bg-primary p-2 rounded-xl text-white shrink-0 shadow-lg shadow-primary/20">
-          <Shirt className="h-6 w-6" />
+          <LayoutGrid className="h-6 w-6" />
         </div>
-        <span className="font-headline font-bold text-xl text-primary truncate group-data-[collapsible=icon]:hidden tracking-tight ml-3">FashionFlow</span>
+        <span className="font-headline font-bold text-xl text-primary truncate group-data-[collapsible=icon]:hidden tracking-tight ml-3">NexusFlow</span>
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
@@ -90,7 +88,7 @@ function AppSidebar() {
           </div>
           <div className="flex flex-col ml-3 group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-bold truncate max-w-[120px]">
-              {isAdmin ? "Administrador" : "Caixa 01"}
+              {isAdmin ? "Administrador" : "Operador"}
             </span>
             <span className="text-[10px] uppercase font-bold text-muted-foreground opacity-70 tracking-tighter">{role}</span>
           </div>
@@ -118,8 +116,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <SidebarInset className="bg-background">
         <header className="flex h-11 items-center px-4 gap-4 sticky top-0 bg-background/60 backdrop-blur-md z-10 border-b border-border/40">
           <div className="flex items-center gap-2">
-            <Shirt className="h-4 w-4 text-primary" />
-            <span className="font-headline font-bold text-primary tracking-tight text-sm">FashionFlow</span>
+            <LayoutGrid className="h-4 w-4 text-primary" />
+            <span className="font-headline font-bold text-primary tracking-tight text-sm">NexusFlow</span>
           </div>
           <div className="flex-1" />
           <ThemeToggle />

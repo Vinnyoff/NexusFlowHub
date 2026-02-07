@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview An AI agent for generating restock suggestions based on sales history and stock levels.
+ * @fileOverview An AI agent for generating restock suggestions based on sales history and stock levels for any business.
  *
  * - generateRestockSuggestions - A function that generates restock suggestions.
  * - AiRestockSuggestionsInput - The input type for the generateRestockSuggestions function.
@@ -14,10 +14,10 @@ import {z} from 'genkit';
 const AiRestockSuggestionsInputSchema = z.object({
   salesHistory: z
     .string()
-    .describe('Sales history data, including product ID, date, and quantity sold.'),
+    .describe('Sales history data, including product/item ID, date, and quantity sold.'),
   stockLevels: z
     .string()
-    .describe('Current stock levels for each product, including product ID and quantity.'),
+    .describe('Current stock levels for each product/item, including ID and quantity.'),
 });
 export type AiRestockSuggestionsInput = z.infer<typeof AiRestockSuggestionsInputSchema>;
 
@@ -38,18 +38,18 @@ const prompt = ai.definePrompt({
   name: 'aiRestockSuggestionsPrompt',
   input: {schema: AiRestockSuggestionsInputSchema},
   output: {schema: AiRestockSuggestionsOutputSchema},
-  prompt: `You are an AI assistant that analyzes sales history and current stock levels to generate restock suggestions for a clothing store.
+  prompt: `You are an AI inventory specialist that analyzes sales history and current stock levels to generate restock suggestions for any type of business.
 
-Analyze the following sales history data:
+Analyze the following operations history:
 {{{salesHistory}}}
 
-And the following current stock levels:
+And the following current inventory levels:
 {{{stockLevels}}}
 
-Based on this data, provide a list of restock suggestions, including the product ID and quantity to restock. Consider recent trends, seasonality, and the rate at which stock levels deplete.
+Based on this data, provide a list of restock suggestions, including the item/product ID and quantity to restock. Consider recent demand, cycles, and the rate at which inventory depletes.
 
-Format your response as a list of product IDs and quantities to restock, separated by commas.
-Example: ProductA: 25, ProductB: 50, ProductC: 15`,
+Format your response as a list of item IDs and quantities to restock, separated by commas.
+Example: ItemA: 25, ItemB: 50, ItemC: 15`,
 });
 
 const aiRestockSuggestionsFlow = ai.defineFlow(

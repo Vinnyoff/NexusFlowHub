@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -21,15 +20,15 @@ import { setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/no
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAdding, setIsAdding] = useState(false);
-  const [activeTab, setActiveTab] = useState("vestuario");
+  const [activeTab, setActiveTab] = useState("principal");
   const [newProduct, setNewProduct] = useState({
     name: "",
     brand: "",
     model: "",
     price: "",
     stock: "",
-    size: "M",
-    category: "Vestuário"
+    variant: "N/A",
+    category: "Geral"
   });
   
   const firestore = useFirestore();
@@ -54,7 +53,7 @@ export default function ProductsPage() {
       toast({ 
         variant: "destructive", 
         title: "Campos obrigatórios", 
-        description: "Por favor, preencha o nome e o preço do produto." 
+        description: "Por favor, preencha o nome e o preço do item." 
       });
       return;
     }
@@ -63,22 +62,21 @@ export default function ProductsPage() {
       toast({ 
         variant: "destructive", 
         title: "Acesso negado", 
-        description: "Apenas administradores podem cadastrar produtos." 
+        description: "Apenas administradores podem cadastrar itens." 
       });
       return;
     }
 
     const productId = crypto.randomUUID();
-    const prefix = activeTab === "calcas" ? "PNT" : "FF";
-    const barcode = `${prefix}-${Math.floor(1000 + Math.random() * 9000)}-${newProduct.size}`;
+    const barcode = `NX-${Math.floor(1000 + Math.random() * 8999)}-${newProduct.variant.replace(/\s+/g, '')}`;
     
     const productData = {
       id: productId,
       name: newProduct.name,
       brand: newProduct.brand,
       model: newProduct.model,
-      category: activeTab === "calcas" ? "Calças" : "Vestuário",
-      size: newProduct.size,
+      category: newProduct.category || "Geral",
+      size: newProduct.variant,
       price: parseFloat(newProduct.price) || 0,
       quantity: parseInt(newProduct.stock) || 0,
       barcode: barcode
@@ -92,8 +90,8 @@ export default function ProductsPage() {
     resetForm();
     
     toast({ 
-      title: "Produto Cadastrado", 
-      description: `${productData.name} foi adicionado ao estoque.` 
+      title: "Item Registrado", 
+      description: `${productData.name} foi adicionado ao inventário.` 
     });
   };
 
@@ -104,25 +102,16 @@ export default function ProductsPage() {
       model: "", 
       price: "", 
       stock: "", 
-      size: activeTab === "calcas" ? "40" : "M",
-      category: activeTab === "calcas" ? "Calças" : "Vestuário"
+      variant: "Padrão",
+      category: "Geral"
     });
-  };
-
-  const handleTabChange = (val: string) => {
-    setActiveTab(val);
-    setNewProduct(prev => ({
-      ...prev,
-      category: val === "calcas" ? "Calças" : "Vestuário",
-      size: val === "calcas" ? "40" : "M"
-    }));
   };
 
   const handleDelete = (id: string) => {
     if (!isAdmin || !firestore) return;
     const docRef = doc(firestore, "products", id);
     deleteDocumentNonBlocking(docRef);
-    toast({ title: "Removido", description: "Produto excluído do estoque." });
+    toast({ title: "Removido", description: "Item excluído do inventário." });
   };
 
   if (!isAdmin) {
@@ -134,7 +123,7 @@ export default function ProductsPage() {
           </div>
           <h1 className="text-2xl font-headline font-bold">Acesso Restrito</h1>
           <p className="text-muted-foreground text-center max-w-md">
-            Apenas administradores podem gerenciar o estoque e cadastrar novos produtos.
+            Apenas administradores podem gerenciar o inventário.
           </p>
         </div>
       </AppLayout>
@@ -146,8 +135,8 @@ export default function ProductsPage() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-headline font-bold text-primary">Estoque de Produtos</h1>
-            <p className="text-muted-foreground">Gerencie o catálogo e variações de tamanho.</p>
+            <h1 className="text-3xl font-headline font-bold text-primary">Inventário de Produtos</h1>
+            <p className="text-muted-foreground">Controle central de mercadorias e insumos.</p>
           </div>
           
           <Dialog open={isAdding} onOpenChange={(open) => {
@@ -157,116 +146,105 @@ export default function ProductsPage() {
             <DialogTrigger asChild>
               <Button className="bg-primary hover:bg-accent text-white gap-2">
                 <Plus className="h-4 w-4" />
-                Novo Produto
+                Novo Item
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px]">
+            <DialogContent className="sm:max-w-[480px]">
               <DialogHeader>
-                <DialogTitle className="font-headline text-xl">Cadastrar Novo Produto</DialogTitle>
+                <DialogTitle className="font-headline text-xl">Cadastrar Novo Item</DialogTitle>
               </DialogHeader>
               
-              <Tabs defaultValue="vestuario" value={activeTab} onValueChange={handleTabChange} className="w-full mt-2">
+              <Tabs defaultValue="principal" value={activeTab} onValueChange={setActiveTab} className="w-full mt-2">
                 <TabsList className="grid w-full grid-cols-2 h-10 bg-muted/50 p-1">
-                  <TabsTrigger value="vestuario" className="rounded-md font-bold text-[10px] uppercase tracking-wider">
-                    <Layers className="h-3 w-3 mr-2" /> Vestuário
+                  <TabsTrigger value="principal" className="rounded-md font-bold text-[10px] uppercase tracking-wider">
+                    <Layers className="h-3 w-3 mr-2" /> Identificação
                   </TabsTrigger>
-                  <TabsTrigger value="calcas" className="rounded-md font-bold text-[10px] uppercase tracking-wider">
-                    <Package className="h-3 w-3 mr-2" /> Calças
+                  <TabsTrigger value="detalhes" className="rounded-md font-bold text-[10px] uppercase tracking-wider">
+                    <Package className="h-3 w-3 mr-2" /> Especificações
                   </TabsTrigger>
                 </TabsList>
 
                 <div className="grid grid-cols-2 gap-3 py-4">
-                  <div className="space-y-1 col-span-2 sm:col-span-1">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Nome</Label>
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Nome do Produto</Label>
                     <Input 
-                      placeholder="Ex: Camiseta Oversized" 
+                      placeholder="Ex: Teclado Mecânico" 
                       value={newProduct.name}
                       onChange={e => setNewProduct({...newProduct, name: e.target.value})}
                       className="rounded-xl border-primary/10 h-9 text-sm"
                     />
                   </div>
+                  
                   <div className="space-y-1 col-span-2 sm:col-span-1">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Marca</Label>
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Fabricante/Marca</Label>
                     <Input 
-                      placeholder="Ex: Nike" 
+                      placeholder="Ex: Dell" 
                       value={newProduct.brand}
                       onChange={e => setNewProduct({...newProduct, brand: e.target.value})}
                       className="rounded-xl border-primary/10 h-9 text-sm"
                     />
                   </div>
+                  
                   <div className="space-y-1 col-span-2 sm:col-span-1">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Modelo</Label>
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Categoria</Label>
                     <Input 
-                      placeholder="Ex: Sport" 
-                      value={newProduct.model}
-                      onChange={e => setNewProduct({...newProduct, model: e.target.value})}
-                      className="rounded-xl border-primary/10 h-9 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1 col-span-2 sm:col-span-1">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Preço (R$)</Label>
-                    <Input 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="0,00" 
-                      value={newProduct.price}
-                      onChange={e => setNewProduct({...newProduct, price: e.target.value})}
+                      placeholder="Ex: Eletrônicos" 
+                      value={newProduct.category}
+                      onChange={e => setNewProduct({...newProduct, category: e.target.value})}
                       className="rounded-xl border-primary/10 h-9 text-sm"
                     />
                   </div>
 
-                  <TabsContent value="vestuario" className="col-span-2 m-0 space-y-3">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Tamanho</Label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {["PP", "P", "M", "G", "GG", "EG", "U"].map(size => (
-                          <Badge 
-                            key={size} 
-                            variant={newProduct.size === size ? "default" : "outline"} 
-                            className="px-3 py-1 cursor-pointer transition-all hover:scale-105 text-[10px]"
-                            onClick={() => setNewProduct({...newProduct, size})}
-                          >
-                            {size}
-                          </Badge>
-                        ))}
-                      </div>
+                  <TabsContent value="principal" className="col-span-2 m-0 grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Preço de Venda (R$)</Label>
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="0,00" 
+                        value={newProduct.price}
+                        onChange={e => setNewProduct({...newProduct, price: e.target.value})}
+                        className="rounded-xl border-primary/10 h-9 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Quantidade Inicial</Label>
+                      <Input 
+                        type="number" 
+                        placeholder="0" 
+                        value={newProduct.stock}
+                        onChange={e => setNewProduct({...newProduct, stock: e.target.value})}
+                        className="rounded-xl border-primary/10 h-9 text-sm"
+                      />
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="calcas" className="col-span-2 m-0 space-y-3">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Tamanho Numérico</Label>
-                      <div className="grid grid-cols-6 sm:grid-cols-10 gap-1.5">
-                        {["34", "36", "38", "40", "42", "44", "46", "48", "50", "52"].map(size => (
-                          <Badge 
-                            key={size} 
-                            variant={newProduct.size === size ? "default" : "outline"} 
-                            className="px-2 py-1 cursor-pointer transition-all hover:scale-105 justify-center text-[10px]"
-                            onClick={() => setNewProduct({...newProduct, size})}
-                          >
-                            {size}
-                          </Badge>
-                        ))}
-                      </div>
+                  <TabsContent value="detalhes" className="col-span-2 m-0 space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Modelo / SKU</Label>
+                      <Input 
+                        placeholder="Ex: K780-Wireless" 
+                        value={newProduct.model}
+                        onChange={e => setNewProduct({...newProduct, model: e.target.value})}
+                        className="rounded-xl border-primary/10 h-9 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Variante (Cor, Tamanho, etc)</Label>
+                      <Input 
+                        placeholder="Ex: Preto" 
+                        value={newProduct.variant}
+                        onChange={e => setNewProduct({...newProduct, variant: e.target.value})}
+                        className="rounded-xl border-primary/10 h-9 text-sm"
+                      />
                     </div>
                   </TabsContent>
-
-                  <div className="space-y-1 col-span-2">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Estoque Inicial</Label>
-                    <Input 
-                      type="number" 
-                      placeholder="0" 
-                      value={newProduct.stock}
-                      onChange={e => setNewProduct({...newProduct, stock: e.target.value})}
-                      className="rounded-xl border-primary/10 h-9 text-sm"
-                    />
-                  </div>
                 </div>
               </Tabs>
 
               <DialogFooter className="border-t pt-4">
                 <Button type="button" variant="ghost" size="sm" onClick={() => setIsAdding(false)} className="rounded-xl">Cancelar</Button>
-                <Button type="button" size="sm" onClick={handleSaveProduct} className="rounded-xl px-6 shadow-lg shadow-primary/20">Salvar Produto</Button>
+                <Button type="button" size="sm" onClick={handleSaveProduct} className="rounded-xl px-6 shadow-lg shadow-primary/20">Salvar Item</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -277,7 +255,7 @@ export default function ProductsPage() {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Buscar por nome, marca, código ou categoria..." 
+                placeholder="Buscar por nome, categoria, código ou fabricante..." 
                 className="pl-10 rounded-xl border-none bg-muted/30 focus-visible:ring-primary/20"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -293,10 +271,10 @@ export default function ProductsPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="pl-6">Produto</TableHead>
+                    <TableHead className="pl-6">Descrição do Item</TableHead>
                     <TableHead>Categoria</TableHead>
-                    <TableHead>Marca/Modelo</TableHead>
-                    <TableHead>Tam.</TableHead>
+                    <TableHead>Fabricante</TableHead>
+                    <TableHead>Variante</TableHead>
                     <TableHead>Preço</TableHead>
                     <TableHead>Estoque</TableHead>
                     <TableHead className="text-right pr-6">Ações</TableHead>
@@ -337,7 +315,7 @@ export default function ProductsPage() {
                   {filteredProducts.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-20 text-muted-foreground">
-                        Nenhum produto encontrado.
+                        Nenhum item encontrado no inventário.
                       </TableCell>
                     </TableRow>
                   )}
