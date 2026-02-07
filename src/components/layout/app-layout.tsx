@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { LayoutGrid, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon } from "lucide-react";
+import { LayoutGrid, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon, FileUp } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/lib/auth-store";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,7 @@ function AppSidebar() {
     { title: "Painel", icon: LayoutDashboard, url: "/dashboard", roles: ["ADM", "CASHIER"] },
     { title: "PDV", icon: ShoppingCart, url: "/pos", roles: ["ADM", "CASHIER"] },
     { title: "Inventário", icon: Package, url: "/products", roles: ["ADM"] },
+    { title: "Importação", icon: FileUp, url: "/import", roles: ["ADM"] },
     { title: "Histórico", icon: History, url: "/history", roles: ["ADM", "CASHIER"] },
     { title: "Análise", icon: PieChart, url: "/reports", roles: ["ADM"] },
   ];
