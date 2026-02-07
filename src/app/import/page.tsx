@@ -37,6 +37,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, doc, writeBatch } from "firebase/firestore";
 
 interface InvoiceProduct {
   id: string;
@@ -44,25 +46,52 @@ interface InvoiceProduct {
   qty: number;
   price: number;
   total: number;
+  barcode: string;
   status: "new" | "exists";
+  existingId?: string;
 }
 
 export default function ImportPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [accessKey, setAccessKey] = useState("");
   const [isConsulting, setIsConsulting] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const [showProductsModal, setShowProductsModal] = useState(false);
   const [invoiceProducts, setInvoiceProducts] = useState<InvoiceProduct[]>([]);
   const [totalInvoice, setTotalInvoice] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const { toast } = useToast();
+  const firestore = useFirestore();
+
+  // Busca produtos existentes para cruzamento de dados
+  const productsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, "products");
+  }, [firestore]);
+
+  const { data: existingProducts } = useCollection(productsQuery);
+
+  const calculateEAN8CheckDigit = (code: string) => {
+    let sum = 0;
+    const weights = [3, 1, 3, 1, 3, 1, 3];
+    for (let i = 0; i < 7; i++) {
+      sum += parseInt(code[i]) * weights[i];
+    }
+    const remainder = sum % 10;
+    return remainder === 0 ? 0 : 10 - remainder;
+  };
+
+  const generateInternalCode = () => {
+    const base = `${Math.floor(1000000 + Math.random() * 9000000)}`;
+    return base + calculateEAN8CheckDigit(base);
+  };
 
   const parseNFXML = (xmlText: string) => {
     try {
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(xmlText, "text/xml");
       
-      // Busca a chave de acesso se disponível
       const infNFe = xmlDoc.getElementsByTagName("infNFe")[0];
       if (infNFe) {
         const idAttr = infNFe.getAttribute("Id");
@@ -77,18 +106,28 @@ export default function ImportPage() {
         const prodNode = items[i].getElementsByTagName("prod")[0];
         if (prodNode) {
           const name = prodNode.getElementsByTagName("xProd")[0]?.textContent || "Produto Sem Nome";
+          const barcode = prodNode.getElementsByTagName("cEAN")[0]?.textContent || "";
           const qty = parseFloat(prodNode.getElementsByTagName("qCom")[0]?.textContent || "0");
           const price = parseFloat(prodNode.getElementsByTagName("vUnCom")[0]?.textContent || "0");
           const itemTotal = parseFloat(prodNode.getElementsByTagName("vProd")[0]?.textContent || "0");
           
           total += itemTotal;
+
+          // Verifica se o produto já existe no sistema (por código de barras ou nome)
+          const existing = existingProducts?.find(p => 
+            (barcode && p.barcode === barcode) || 
+            (p.name.toLowerCase() === name.toLowerCase())
+          );
+
           products.push({
             id: (i + 1).toString(),
             name,
             qty,
             price,
             total: itemTotal,
-            status: Math.random() > 0.5 ? "exists" : "new" // Simulação de cruzamento com banco
+            barcode,
+            status: existing ? "exists" : "new",
+            existingId: existing?.id
           });
         }
       }
@@ -138,26 +177,74 @@ export default function ImportPage() {
 
     setIsConsulting(true);
     
-    // Simula consulta Sefaz retornando dados mockados
+    // Simulação de consulta retornando dados mockados baseados na chave
     setTimeout(() => {
       setIsConsulting(false);
-      setInvoiceProducts([
-        { id: "1", name: "Produto da Chave 01", qty: 10, price: 50.00, total: 500.00, status: "exists" },
-        { id: "2", name: "Produto da Chave 02", qty: 5, price: 120.00, total: 600.00, status: "new" },
-      ]);
-      setTotalInvoice(1100.00);
+      const mockItems: InvoiceProduct[] = [
+        { id: "1", name: "Produto Exemplo 01", qty: 10, price: 45.00, total: 450.00, barcode: "7891234567890", status: "new" },
+        { id: "2", name: "Produto Exemplo 02", qty: 5, price: 110.00, total: 550.00, barcode: "7890987654321", status: "exists", existingId: existingProducts?.[0]?.id },
+      ];
+      setInvoiceProducts(mockItems);
+      setTotalInvoice(1000.00);
       setShowProductsModal(true);
-    }, 2000);
+    }, 1500);
   };
 
-  const handleFinalizeImport = () => {
-    setShowProductsModal(false);
-    setAccessKey("");
-    setInvoiceProducts([]);
-    toast({
-      title: "Sucesso!",
-      description: "Produtos importados e estoque atualizado com sucesso.",
-    });
+  const handleFinalizeImport = async () => {
+    if (!firestore || invoiceProducts.length === 0) return;
+
+    setIsFinalizing(true);
+    const batch = writeBatch(firestore);
+
+    try {
+      invoiceProducts.forEach((item) => {
+        if (item.status === "exists" && item.existingId) {
+          // Atualiza produto existente (soma quantidade)
+          const existing = existingProducts?.find(p => p.id === item.existingId);
+          const docRef = doc(firestore, "products", item.existingId);
+          batch.update(docRef, {
+            quantity: (existing?.quantity || 0) + item.qty,
+            price: item.price // Opcional: atualiza para o preço da última nota
+          });
+        } else {
+          // Cria novo produto
+          const newId = crypto.randomUUID();
+          const docRef = doc(firestore, "products", newId);
+          batch.set(docRef, {
+            id: newId,
+            name: item.name,
+            brand: "Importado",
+            model: "NF-e",
+            category: "Geral",
+            size: "Padrão",
+            price: item.price,
+            quantity: item.qty,
+            barcode: item.barcode,
+            internalCode: generateInternalCode()
+          });
+        }
+      });
+
+      await batch.commit();
+
+      setShowProductsModal(false);
+      setAccessKey("");
+      setInvoiceProducts([]);
+      
+      toast({
+        title: "Sucesso!",
+        description: `${invoiceProducts.length} itens foram processados e o estoque foi atualizado.`,
+      });
+    } catch (error) {
+      console.error("Erro na importação:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro na Importação",
+        description: "Não foi possível atualizar o estoque. Tente novamente.",
+      });
+    } finally {
+      setIsFinalizing(false);
+    }
   };
 
   return (
@@ -202,16 +289,6 @@ export default function ImportPage() {
                       {isConsulting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                       Consultar
                     </Button>
-                  </div>
-                  <div className="flex justify-between items-center px-1">
-                    <p className="text-[10px] text-muted-foreground">
-                      {accessKey.length}/44 dígitos digitados
-                    </p>
-                    {accessKey.length === 44 && !isConsulting && (
-                      <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> Chave Completa
-                      </span>
-                    )}
                   </div>
                 </div>
               </CardContent>
@@ -268,15 +345,15 @@ export default function ImportPage() {
                 <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
                   <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-bold">Sefaz Online</p>
-                    <p className="text-xs text-muted-foreground">Consulta de chaves disponível.</p>
+                    <p className="text-sm font-bold">Conexão com Banco</p>
+                    <p className="text-xs text-muted-foreground">Pronto para atualizar estoque.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
                   <FileText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-bold">Leitor XML 4.0</p>
-                    <p className="text-xs text-muted-foreground">Padrão nacional habilitado.</p>
+                    <p className="text-xs text-muted-foreground">Mapeamento de EAN ativo.</p>
                   </div>
                 </div>
               </CardContent>
@@ -285,12 +362,12 @@ export default function ImportPage() {
             <Card className="bg-primary text-white border-none shadow-lg rounded-2xl">
               <CardHeader>
                 <CardTitle className="text-lg font-headline flex items-center gap-2 text-white">
-                  <AlertCircle className="h-5 w-5" /> Dica Nexus
+                  <AlertCircle className="h-5 w-5" /> Importação Inteligente
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-xs opacity-90 leading-relaxed">
-                  O sistema identifica produtos pelo EAN. Itens novos serão marcados para que você possa cadastrá-los rapidamente durante a importação.
+                  O sistema reconhece itens cadastrados pelo Código de Barras. Produtos novos recebem automaticamente um Código Interno (EAN-8) para etiquetas.
                 </p>
               </CardContent>
             </Card>
@@ -319,7 +396,7 @@ export default function ImportPage() {
                     <TableHead className="text-center text-[10px] font-bold uppercase">Qtd</TableHead>
                     <TableHead className="text-right text-[10px] font-bold uppercase">Preço Un.</TableHead>
                     <TableHead className="text-right text-[10px] font-bold uppercase">Total Item</TableHead>
-                    <TableHead className="text-center text-[10px] font-bold uppercase">Status</TableHead>
+                    <TableHead className="text-center text-[10px] font-bold uppercase">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -327,25 +404,20 @@ export default function ImportPage() {
                     <TableRow key={product.id}>
                       <TableCell className="pl-6">
                         <p className="font-bold text-sm line-clamp-1">{product.name}</p>
-                        <p className="text-[10px] text-muted-foreground">REF: {Math.random().toString(36).substring(7).toUpperCase()}</p>
+                        <p className="text-[10px] text-muted-foreground">EAN: {product.barcode || "SEM CÓDIGO"}</p>
                       </TableCell>
                       <TableCell className="text-center font-bold">{product.qty}</TableCell>
                       <TableCell className="text-right font-medium">R$ {product.price.toFixed(2)}</TableCell>
                       <TableCell className="text-right font-black text-primary">R$ {product.total.toFixed(2)}</TableCell>
                       <TableCell className="text-center">
                         {product.status === "exists" ? (
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[9px] uppercase font-bold">No Sistema</Badge>
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[9px] uppercase font-bold">Atualizar Estoque</Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[9px] uppercase font-bold">Novo Item</Badge>
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[9px] uppercase font-bold">Novo Cadastro</Badge>
                         )}
                       </TableCell>
                     </TableRow>
                   ))}
-                  {invoiceProducts.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-10 opacity-50 italic">Nenhum produto identificado.</TableCell>
-                    </TableRow>
-                  )}
                 </TableBody>
               </Table>
             </div>
@@ -359,11 +431,16 @@ export default function ImportPage() {
                 </div>
               </div>
               <DialogFooter className="w-full md:w-auto flex gap-3">
-                <Button variant="ghost" onClick={() => setShowProductsModal(false)} className="rounded-xl px-6 h-11">
+                <Button variant="ghost" onClick={() => setShowProductsModal(false)} className="rounded-xl px-6 h-11" disabled={isFinalizing}>
                   Cancelar
                 </Button>
-                <Button onClick={handleFinalizeImport} className="bg-primary hover:bg-accent text-white font-bold rounded-xl px-8 h-11 gap-2 shadow-lg shadow-primary/20">
-                  Confirmar Entrada <ArrowRight className="h-4 w-4" />
+                <Button 
+                  onClick={handleFinalizeImport} 
+                  disabled={isFinalizing || invoiceProducts.length === 0}
+                  className="bg-primary hover:bg-accent text-white font-bold rounded-xl px-8 h-11 gap-2 shadow-lg shadow-primary/20"
+                >
+                  {isFinalizing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                  Confirmar e Importar
                 </Button>
               </DialogFooter>
             </div>
