@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -35,8 +36,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background p-4">
-      <div className="w-full max-w-[350px] space-y-8 animate-in fade-in zoom-in duration-500">
+    <div className="flex items-center justify-center h-screen w-screen overflow-hidden bg-background p-4">
+      <div className="w-full max-w-[350px] space-y-6 animate-in fade-in zoom-in duration-500">
         <div className="flex flex-col items-center text-center space-y-2">
           <div className="bg-primary p-3 rounded-2xl shadow-xl shadow-primary/20">
             <LayoutGrid className="h-8 w-8 text-white" />
