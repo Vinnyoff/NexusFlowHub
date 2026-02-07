@@ -4,80 +4,75 @@
 
 @layer base {
   :root {
-    /* Branco Base */
-    --background: 0 0% 100%;
-    --foreground: 224 71.4% 4.1%;
+    /* Fundo principal: #0F172A */
+    --background: 222 47% 11%;
+    /* Texto principal: #E5E7EB */
+    --foreground: 214 32% 91%;
     
-    --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
+    /* Fundo secundário (Cards/Modais): #1E293B */
+    --card: 217 33% 17%;
+    --card-foreground: 214 32% 91%;
     
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 71.4% 4.1%;
+    --popover: 217 33% 17%;
+    --popover-foreground: 214 32% 91%;
     
-    /* Azul Principal (#1E3A8A) - HSL(224, 64%, 33%) */
-    --primary: 224 64% 33%;
-    --primary-foreground: 210 20% 98%;
+    /* Azul principal (ações): #3B82F6 */
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
     
-    /* Azul Claro (#DBEAFE) - HSL(214, 95%, 93%) */
-    --secondary: 214 95% 93%;
-    --secondary-foreground: 224 64% 33%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 214 32% 91%;
     
-    /* Azul Claro para fundos suaves */
-    --muted: 214 95% 93%;
-    --muted-foreground: 220 8.9% 46.1%;
+    --muted: 217 33% 17%;
+    /* Texto secundário: #94A3B8 */
+    --muted-foreground: 215 16% 62%;
     
-    /* Azul Secundário (#2563EB) - HSL(221, 83%, 53%) */
+    /* Azul hover / foco: #2563EB */
     --accent: 221 83% 53%;
-    --accent-foreground: 210 20% 98%;
+    --accent-foreground: 214 32% 91%;
     
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 20% 98%;
+    /* Status: Erro #EF4444 */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
     
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 224 64% 33%;
+    --border: 217 33% 25%;
+    --input: 217 33% 25%;
+    --ring: 217 91% 60%;
     
     --radius: 0.75rem;
 
-    /* Configuração Sidebar com Azul Principal */
-    --sidebar-background: 224 64% 33%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 221 83% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    /* Configuração Sidebar */
+    --sidebar-background: 217 33% 17%;
+    --sidebar-foreground: 214 32% 91%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 222 47% 11%;
     --sidebar-accent: 221 83% 53%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 224 64% 25%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-accent-foreground: 214 32% 91%;
+    --sidebar-border: 217 33% 25%;
+    --sidebar-ring: 217 91% 60%;
   }
 
+  /* Mantemos o root como padrão dark para este sistema */
   .dark {
-    --background: 224 71.4% 4.1%;
-    --foreground: 210 20% 98%;
-    
-    --card: 224 71.4% 4.1%;
-    --card-foreground: 210 20% 98%;
-    
-    --popover: 224 71.4% 4.1%;
-    --popover-foreground: 210 20% 98%;
-    
-    --primary: 210 20% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    
-    --secondary: 224 64% 33%;
-    --secondary-foreground: 210 20% 98%;
-    
-    --muted: 224 64% 33%;
-    --muted-foreground: 215 20.2% 65.1%;
-    
+    --background: 222 47% 11%;
+    --foreground: 214 32% 91%;
+    --card: 217 33% 17%;
+    --card-foreground: 214 32% 91%;
+    --popover: 217 33% 17%;
+    --popover-foreground: 214 32% 91%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 214 32% 91%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 16% 62%;
     --accent: 221 83% 53%;
-    --accent-foreground: 210 20% 98%;
-    
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 20% 98%;
-    
-    --border: 215 27.9% 16.9%;
-    --input: 215 27.9% 16.9%;
-    --ring: 216 34.1% 17.6%;
+    --accent-foreground: 214 32% 91%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 25%;
+    --input: 217 33% 25%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -92,3 +87,9 @@
     @apply font-headline;
   }
 }
+
+/* Custom Success/Alert/Info utility classes for statuses mentioned in proposal */
+.status-success { color: #22C55E; background-color: #14532D; }
+.status-alert { color: #FACC15; background-color: #78350F; }
+.status-error { color: #EF4444; background-color: #7F1D1D; }
+.status-info { color: #38BDF8; background-color: #0C4A6E; }

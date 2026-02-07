@@ -8,7 +8,7 @@ import { useAuth } from "@/app/lib/auth-store";
 import { Button } from "@/components/ui/button";
 
 function ThemeToggle() {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains("dark");
@@ -32,13 +32,13 @@ function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className="h-8 w-8 rounded-full text-white hover:bg-white/10"
+      className="h-8 w-8 rounded-full text-foreground hover:bg-white/10"
       title={isDark ? "Mudar para modo claro" : "Mudar para modo escuro"}
     >
       {isDark ? (
         <Sun className="h-4 w-4 text-amber-400" />
       ) : (
-        <Moon className="h-4 w-4 text-white" />
+        <Moon className="h-4 w-4 text-foreground" />
       )}
     </Button>
   );
@@ -47,7 +47,6 @@ function ThemeToggle() {
 function AppSidebar() {
   const pathname = usePathname();
   const { role, logout } = useAuth();
-  const isAdmin = role === "ADM";
 
   const menuItems = [
     { title: "Painel", icon: LayoutDashboard, url: "/dashboard", roles: ["ADM", "CASHIER"] },
@@ -60,9 +59,9 @@ function AppSidebar() {
   const visibleItems = menuItems.filter(item => item.roles.includes(role || "CASHIER"));
 
   return (
-    <Sidebar collapsible="icon" className="border-r-0 bg-primary shadow-2xl">
+    <Sidebar collapsible="icon" className="border-r border-border bg-card shadow-2xl">
       <SidebarHeader className="p-4 flex items-center justify-center overflow-hidden">
-        <div className="bg-white/10 p-2 rounded-xl text-white shrink-0">
+        <div className="bg-primary/10 p-2 rounded-xl text-primary shrink-0">
           <LayoutGrid className="h-6 w-6" />
         </div>
       </SidebarHeader>
@@ -70,20 +69,20 @@ function AppSidebar() {
         <SidebarMenu>
           {visibleItems.map((item) => (
             <SidebarMenuItem key={item.url}>
-              <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title} className="rounded-xl h-11 flex justify-center hover:bg-white/10 data-[active=true]:bg-accent data-[active=true]:text-white">
+              <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title} className="rounded-xl h-11 flex justify-center hover:bg-primary/10 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground">
                 <a href={item.url} className="flex items-center gap-3">
-                  <item.icon className="h-5 w-5 text-white" />
-                  <span className="font-semibold group-data-[collapsible=icon]:hidden text-white">{item.title}</span>
+                  <item.icon className="h-5 w-5" />
+                  <span className="font-semibold group-data-[collapsible=icon]:hidden">{item.title}</span>
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="p-2 border-t border-white/10 mt-auto overflow-hidden flex flex-col items-center gap-4">
+      <SidebarFooter className="p-2 border-t border-border mt-auto overflow-hidden flex flex-col items-center gap-4">
         <div className="flex items-center justify-center w-full">
-          <div className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
-            <User className="h-5 w-5 text-white" />
+          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+            <User className="h-5 w-5 text-primary" />
           </div>
         </div>
         <SidebarMenuButton 
@@ -91,7 +90,7 @@ function AppSidebar() {
             logout();
             window.location.href = "/";
           }} 
-          className="text-white hover:bg-destructive/20 rounded-xl h-11 flex justify-center w-full"
+          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-xl h-11 flex justify-center w-full"
           tooltip="Sair"
         >
           <LogOut className="h-5 w-5" />
@@ -106,10 +105,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider defaultOpen={false}>
       <AppSidebar />
       <SidebarInset className="bg-background">
-        <header className="flex h-14 items-center px-6 gap-4 sticky top-0 bg-primary text-white z-10 shadow-md">
+        <header className="flex h-14 items-center px-6 gap-4 sticky top-0 bg-card border-b border-border z-10 shadow-sm">
           <div className="flex items-center gap-2">
-            <LayoutGrid className="h-5 w-5 text-white" />
-            <span className="font-headline font-bold text-white tracking-tight text-lg">NexusFlow</span>
+            <LayoutGrid className="h-5 w-5 text-primary" />
+            <span className="font-headline font-bold text-foreground tracking-tight text-lg">NexusFlow</span>
           </div>
           <div className="flex-1" />
           <ThemeToggle />

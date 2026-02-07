@@ -35,21 +35,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen w-screen overflow-hidden bg-primary p-4">
+    <div className="flex items-center justify-center h-screen w-screen overflow-hidden bg-background p-4">
       <div className="w-full max-w-[380px] space-y-6 animate-in fade-in zoom-in duration-500">
         <div className="flex flex-col items-center text-center space-y-2">
-          <div className="bg-white p-3 rounded-2xl shadow-xl">
+          <div className="bg-card p-3 rounded-2xl shadow-xl border border-border">
             <LayoutGrid className="h-8 w-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-headline font-bold text-white tracking-tight">NexusFlow</h1>
-            <p className="text-[10px] text-white/70 font-bold uppercase tracking-[0.2em]">
+            <h1 className="text-3xl font-headline font-bold text-foreground tracking-tight">NexusFlow</h1>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
               Gestão Empresarial
             </p>
           </div>
         </div>
 
-        <Card className="border-none shadow-2xl bg-white rounded-3xl overflow-hidden">
+        <Card className="border-none shadow-2xl bg-card rounded-3xl overflow-hidden">
           <CardContent className="p-8 pt-10">
             <form onSubmit={handleLogin} className="space-y-5">
               {error && (
@@ -69,7 +69,7 @@ export default function LoginPage() {
                   placeholder="exemplo@nexusflow.com" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-xl border-primary/10 h-12 focus:ring-accent/20 transition-all"
+                  className="rounded-xl border-border bg-background h-12 focus:ring-primary/20 transition-all"
                   required
                 />
               </div>
@@ -85,13 +85,13 @@ export default function LoginPage() {
                     placeholder="••••••••" 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="rounded-xl border-primary/10 h-12 focus:ring-accent/20 transition-all pr-10"
+                    className="rounded-xl border-border bg-background h-12 focus:ring-primary/20 transition-all pr-10"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-accent transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -100,7 +100,7 @@ export default function LoginPage() {
 
               <Button 
                 type="submit"
-                className="w-full h-12 rounded-xl bg-accent hover:bg-accent/90 text-white font-bold tracking-wide transition-all shadow-lg shadow-accent/20 mt-2"
+                className="w-full h-12 rounded-xl bg-primary hover:bg-accent text-primary-foreground font-bold tracking-wide transition-all shadow-lg shadow-primary/20 mt-2"
                 disabled={isLoggingIn}
               >
                 {isLoggingIn ? (
@@ -119,7 +119,7 @@ export default function LoginPage() {
           </CardContent>
         </Card>
         
-        <p className="text-center text-[10px] text-white/50 font-bold uppercase tracking-widest">
+        <p className="text-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
           &copy; 2024 NexusFlow Systems
         </p>
       </div>
