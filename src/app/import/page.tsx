@@ -18,7 +18,7 @@ import {
   ShoppingCart,
   ArrowRight
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -47,29 +47,83 @@ interface InvoiceProduct {
   status: "new" | "exists";
 }
 
-const MOCK_INVOICE_PRODUCTS: InvoiceProduct[] = [
-  { id: "1", name: "Camiseta Basic Black M", qty: 25, price: 45.90, total: 1147.50, status: "exists" },
-  { id: "2", name: "Calça Jeans Slim Blue 42", qty: 10, price: 89.00, total: 890.00, status: "exists" },
-  { id: "3", name: "Jaqueta Bomber Nexus V2", qty: 5, price: 159.00, total: 795.00, status: "new" },
-  { id: "4", name: "Tênis Sport Tech White 40", qty: 8, price: 210.00, total: 1680.00, status: "new" },
-];
-
 export default function ImportPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [accessKey, setAccessKey] = useState("");
   const [isConsulting, setIsConsulting] = useState(false);
   const [showProductsModal, setShowProductsModal] = useState(false);
+  const [invoiceProducts, setInvoiceProducts] = useState<InvoiceProduct[]>([]);
+  const [totalInvoice, setTotalInvoice] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleSimulateUpload = () => {
-    toast({
-      title: "Processando Nota",
-      description: "O sistema está lendo os dados do arquivo XML/PDF...",
-    });
-    
-    setTimeout(() => {
+  const parseNFXML = (xmlText: string) => {
+    try {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+      
+      // Busca a chave de acesso se disponível
+      const infNFe = xmlDoc.getElementsByTagName("infNFe")[0];
+      if (infNFe) {
+        const idAttr = infNFe.getAttribute("Id");
+        if (idAttr) setAccessKey(idAttr.replace(/\D/g, ""));
+      }
+
+      const items = xmlDoc.getElementsByTagName("det");
+      const products: InvoiceProduct[] = [];
+      let total = 0;
+
+      for (let i = 0; i < items.length; i++) {
+        const prodNode = items[i].getElementsByTagName("prod")[0];
+        if (prodNode) {
+          const name = prodNode.getElementsByTagName("xProd")[0]?.textContent || "Produto Sem Nome";
+          const qty = parseFloat(prodNode.getElementsByTagName("qCom")[0]?.textContent || "0");
+          const price = parseFloat(prodNode.getElementsByTagName("vUnCom")[0]?.textContent || "0");
+          const itemTotal = parseFloat(prodNode.getElementsByTagName("vProd")[0]?.textContent || "0");
+          
+          total += itemTotal;
+          products.push({
+            id: (i + 1).toString(),
+            name,
+            qty,
+            price,
+            total: itemTotal,
+            status: Math.random() > 0.5 ? "exists" : "new" // Simulação de cruzamento com banco
+          });
+        }
+      }
+
+      setInvoiceProducts(products);
+      setTotalInvoice(total);
       setShowProductsModal(true);
-    }, 1500);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao ler XML",
+        description: "O arquivo selecionado não é um XML de nota fiscal válido.",
+      });
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith(".xml")) {
+      toast({
+        variant: "destructive",
+        title: "Arquivo Inválido",
+        description: "Por favor, selecione um arquivo XML de Nota Fiscal.",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      parseNFXML(content);
+    };
+    reader.readAsText(file);
   };
 
   const handleConsultKey = () => {
@@ -84,9 +138,14 @@ export default function ImportPage() {
 
     setIsConsulting(true);
     
-    // Simula tempo de resposta da Sefaz
+    // Simula consulta Sefaz retornando dados mockados
     setTimeout(() => {
       setIsConsulting(false);
+      setInvoiceProducts([
+        { id: "1", name: "Produto da Chave 01", qty: 10, price: 50.00, total: 500.00, status: "exists" },
+        { id: "2", name: "Produto da Chave 02", qty: 5, price: 120.00, total: 600.00, status: "new" },
+      ]);
+      setTotalInvoice(1100.00);
       setShowProductsModal(true);
     }, 2000);
   };
@@ -94,6 +153,7 @@ export default function ImportPage() {
   const handleFinalizeImport = () => {
     setShowProductsModal(false);
     setAccessKey("");
+    setInvoiceProducts([]);
     toast({
       title: "Sucesso!",
       description: "Produtos importados e estoque atualizado com sucesso.",
@@ -105,12 +165,11 @@ export default function ImportPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-headline font-bold text-primary">Importação de Notas</h1>
-          <p className="text-muted-foreground">Entrada de mercadorias automática via Chave de Acesso, XML ou PDF.</p>
+          <p className="text-muted-foreground">Entrada de mercadorias automática via Chave de Acesso ou Arquivo XML.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* Campo de Chave de Acesso */}
             <Card className="border-none shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg font-headline flex items-center gap-2">
@@ -158,30 +217,44 @@ export default function ImportPage() {
               </CardContent>
             </Card>
 
-            {/* Area de Upload */}
             <Card 
-              className={`border-2 border-dashed transition-all ${
-                isDragging ? "border-primary bg-primary/5" : "border-border"
+              className={`border-2 border-dashed transition-all cursor-pointer ${
+                isDragging ? "border-primary bg-primary/5" : "border-border hover:bg-muted/10"
               }`}
+              onClick={() => fileInputRef.current?.click()}
               onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
               onDragLeave={() => setIsDragging(false)}
-              onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleSimulateUpload(); }}
+              onDrop={(e) => { 
+                e.preventDefault(); 
+                setIsDragging(false); 
+                if (e.dataTransfer.files?.[0]) {
+                  const file = e.dataTransfer.files[0];
+                  const reader = new FileReader();
+                  reader.onload = (ev) => parseNFXML(ev.target?.result as string);
+                  reader.readAsText(file);
+                }
+              }}
             >
               <CardContent className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  accept=".xml" 
+                  className="hidden" 
+                />
                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                   <FileUp className="h-8 w-8" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-bold">Ou arraste seu arquivo aqui</h3>
+                  <h3 className="text-xl font-bold">Importar Arquivo XML</h3>
                   <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                    Suporte para arquivos XML de NF-e e PDFs de faturamento.
+                    Clique aqui ou arraste o arquivo da nota fiscal para processar os itens automaticamente.
                   </p>
                 </div>
-                <div className="flex gap-4">
-                  <Button onClick={handleSimulateUpload} variant="outline" className="gap-2 rounded-xl">
-                    <Upload className="h-4 w-4" /> Selecionar XML/PDF
-                  </Button>
-                </div>
+                <Button variant="outline" className="gap-2 rounded-xl">
+                  <Upload className="h-4 w-4" /> Selecionar XML do Computador
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -202,8 +275,8 @@ export default function ImportPage() {
                 <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
                   <FileText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-bold">Leitor XML</p>
-                    <p className="text-xs text-muted-foreground">Padrão 4.0 atualizado.</p>
+                    <p className="text-sm font-bold">Leitor XML 4.0</p>
+                    <p className="text-xs text-muted-foreground">Padrão nacional habilitado.</p>
                   </div>
                 </div>
               </CardContent>
@@ -217,15 +290,13 @@ export default function ImportPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-xs opacity-90 leading-relaxed">
-                  Ao importar uma nota via chave ou arquivo, o sistema cruza os produtos automaticamente pelo EAN. 
-                  Itens não cadastrados serão destacados para você decidir se deseja criá-los.
+                  O sistema identifica produtos pelo EAN. Itens novos serão marcados para que você possa cadastrá-los rapidamente durante a importação.
                 </p>
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Modal de Conferência de Produtos */}
         <Dialog open={showProductsModal} onOpenChange={setShowProductsModal}>
           <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl">
             <DialogHeader className="p-6 border-b bg-muted/20">
@@ -234,17 +305,17 @@ export default function ImportPage() {
                   <TableIcon className="h-6 w-6" />
                 </div>
                 <div>
-                  <DialogTitle className="text-2xl font-headline font-bold text-primary">Conferência de Produtos</DialogTitle>
-                  <DialogDescription className="text-xs font-mono">NF-e: {accessKey.replace(/(.{4})/g, '$1 ')}</DialogDescription>
+                  <DialogTitle className="text-2xl font-headline font-bold text-primary">Conferência da Nota</DialogTitle>
+                  <DialogDescription className="text-xs font-mono">Chave: {accessKey || "Importação Manual"}</DialogDescription>
                 </div>
               </div>
             </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto p-0">
+            <div className="flex-1 overflow-y-auto">
               <Table>
                 <TableHeader className="bg-muted/50 sticky top-0 z-10">
                   <TableRow>
-                    <TableHead className="pl-6 text-[10px] font-bold uppercase">Produto Identificado</TableHead>
+                    <TableHead className="pl-6 text-[10px] font-bold uppercase">Produto na Nota</TableHead>
                     <TableHead className="text-center text-[10px] font-bold uppercase">Qtd</TableHead>
                     <TableHead className="text-right text-[10px] font-bold uppercase">Preço Un.</TableHead>
                     <TableHead className="text-right text-[10px] font-bold uppercase">Total Item</TableHead>
@@ -252,10 +323,10 @@ export default function ImportPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {MOCK_INVOICE_PRODUCTS.map((product) => (
+                  {invoiceProducts.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell className="pl-6">
-                        <p className="font-bold text-sm">{product.name}</p>
+                        <p className="font-bold text-sm line-clamp-1">{product.name}</p>
                         <p className="text-[10px] text-muted-foreground">REF: {Math.random().toString(36).substring(7).toUpperCase()}</p>
                       </TableCell>
                       <TableCell className="text-center font-bold">{product.qty}</TableCell>
@@ -263,13 +334,18 @@ export default function ImportPage() {
                       <TableCell className="text-right font-black text-primary">R$ {product.total.toFixed(2)}</TableCell>
                       <TableCell className="text-center">
                         {product.status === "exists" ? (
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[9px] uppercase font-bold">Cadastrado</Badge>
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[9px] uppercase font-bold">No Sistema</Badge>
                         ) : (
                           <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[9px] uppercase font-bold">Novo Item</Badge>
                         )}
                       </TableCell>
                     </TableRow>
                   ))}
+                  {invoiceProducts.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-10 opacity-50 italic">Nenhum produto identificado.</TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -279,7 +355,7 @@ export default function ImportPage() {
                 <ShoppingCart className="h-5 w-5 text-primary" />
                 <div>
                   <p className="text-[10px] font-bold uppercase text-muted-foreground leading-none">Total da Nota</p>
-                  <p className="text-xl font-black text-primary">R$ 4.512,50</p>
+                  <p className="text-xl font-black text-primary">R$ {totalInvoice.toFixed(2)}</p>
                 </div>
               </div>
               <DialogFooter className="w-full md:w-auto flex gap-3">
@@ -287,24 +363,12 @@ export default function ImportPage() {
                   Cancelar
                 </Button>
                 <Button onClick={handleFinalizeImport} className="bg-primary hover:bg-accent text-white font-bold rounded-xl px-8 h-11 gap-2 shadow-lg shadow-primary/20">
-                  Confirmar Importação <ArrowRight className="h-4 w-4" />
+                  Confirmar Entrada <ArrowRight className="h-4 w-4" />
                 </Button>
               </DialogFooter>
             </div>
           </DialogContent>
         </Dialog>
-
-        <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-headline">Últimas Importações</CardTitle>
-            <CardDescription>Histórico de processamento de arquivos recentes.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-10 text-muted-foreground italic text-sm">
-              Nenhuma importação processada nesta sessão.
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </AppLayout>
   );
