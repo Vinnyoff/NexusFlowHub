@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { LayoutGrid, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon, Menu } from "lucide-react";
+import { LayoutGrid, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/lib/auth-store";
 import { Button } from "@/components/ui/button";
@@ -60,9 +60,9 @@ function AppSidebar() {
   const visibleItems = menuItems.filter(item => item.roles.includes(role || "CASHIER"));
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border bg-card shadow-xl">
+    <Sidebar collapsible="icon" className="border-r border-border bg-card shadow-xl transition-all duration-300">
       <SidebarHeader className="p-4 flex items-center justify-center">
-        <div className="bg-primary/10 p-2 rounded-xl text-primary shrink-0">
+        <div className="bg-primary/10 p-2 rounded-xl text-primary shrink-0 transition-transform hover:scale-110">
           <LayoutGrid className="h-6 w-6" />
         </div>
       </SidebarHeader>
@@ -70,7 +70,7 @@ function AppSidebar() {
         <SidebarMenu>
           {visibleItems.map((item) => (
             <SidebarMenuItem key={item.url}>
-              <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title} className="rounded-xl h-11 hover:bg-primary/10 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground">
+              <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title} className="rounded-xl h-11 hover:bg-primary/10 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground transition-all">
                 <a href={item.url} className="flex items-center gap-3">
                   <item.icon className="h-5 w-5" />
                   <span className="font-semibold">{item.title}</span>
@@ -89,7 +89,7 @@ function AppSidebar() {
             logout();
             window.location.href = "/";
           }} 
-          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-xl h-11 flex justify-center w-full"
+          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-xl h-11 flex justify-center w-full transition-colors"
           tooltip="Sair"
         >
           <LogOut className="h-5 w-5" />
@@ -105,16 +105,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <AppSidebar />
       <SidebarInset className="bg-background flex flex-col">
         <header className="flex h-14 items-center px-4 md:px-6 gap-4 sticky top-0 bg-card border-b border-border z-20 shadow-sm">
-          <SidebarTrigger />
+          <SidebarTrigger className="text-primary hover:bg-primary/10" />
           <div className="flex items-center gap-2">
             <LayoutGrid className="h-5 w-5 text-primary" />
-            <span className="font-headline font-bold text-foreground tracking-tight text-lg">NexusFlow</span>
+            <span className="font-headline font-bold text-foreground tracking-tight text-lg hidden sm:inline-block">NexusFlow</span>
           </div>
           <div className="flex-1" />
           <ThemeToggle />
         </header>
         <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
-          <div className="max-w-7xl mx-auto w-full">
+          <div className="max-w-7xl mx-auto w-full animate-in fade-in duration-500">
             {children}
           </div>
         </main>
