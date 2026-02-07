@@ -36,7 +36,6 @@ export default function POSPage() {
   const { user } = useUser();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch real products from Firestore
   const productsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, "products");
@@ -60,7 +59,7 @@ export default function POSPage() {
           model: product.model || "-",
           category: product.category || "Geral",
           size: product.size || "Padrão", 
-          price: product.price, 
+          price: Number(product.price) || 0, 
           quantity: 1,
           barcode: product.barcode,
           internalCode: product.internalCode
@@ -92,7 +91,7 @@ export default function POSPage() {
     setCart(prev => prev.filter(item => item.id !== id));
   };
 
-  const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const total = cart.reduce((acc, item) => acc + ((Number(item.price) || 0) * (Number(item.quantity) || 0)), 0);
 
   const finalizeSale = async () => {
     if (cart.length === 0 || !user || !firestore) return;
@@ -103,12 +102,11 @@ export default function POSPage() {
       const saleId = crypto.randomUUID();
       const saleDocRef = doc(firestore, "users", user.uid, "sales", saleId);
 
-      // Salva itens denormalizados para histórico rápido
       const saleData = {
         id: saleId,
         dateTime: new Date().toISOString(),
         createdAt: serverTimestamp(),
-        totalAmount: total,
+        totalAmount: Number(total.toFixed(2)),
         userId: user.uid,
         paymentMethod,
         saleItems: cart.map(item => ({
@@ -117,15 +115,14 @@ export default function POSPage() {
           brand: item.brand,
           model: item.model,
           category: item.category,
-          quantity: item.quantity,
-          price: item.price
+          quantity: Number(item.quantity),
+          price: Number(item.price)
         }))
       };
 
       const batch = writeBatch(firestore);
       batch.set(saleDocRef, saleData);
 
-      // Reduz estoque e cria subcoleção SaleItems
       cart.forEach(item => {
         const saleItemId = crypto.randomUUID();
         const itemRef = doc(firestore, "users", user.uid, "sales", saleId, "saleItems", saleItemId);
@@ -133,16 +130,15 @@ export default function POSPage() {
           id: saleItemId,
           saleId: saleId,
           productId: item.id,
-          quantity: item.quantity,
-          price: item.price
+          quantity: Number(item.quantity),
+          price: Number(item.price)
         });
 
-        // Atualização de estoque (opcional aqui ou via trigger se houvesse)
         const productRef = doc(firestore, "products", item.id);
         const product = products?.find(p => p.id === item.id);
         if (product) {
           batch.update(productRef, {
-            quantity: Math.max(0, (product.quantity || 0) - item.quantity)
+            quantity: Math.max(0, (Number(product.quantity) || 0) - Number(item.quantity))
           });
         }
       });
@@ -197,21 +193,6 @@ export default function POSPage() {
                   {isLoadingProducts ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar"}
                 </Button>
               </form>
-              
-              <div className="mt-4 flex flex-wrap gap-2">
-                <p className="text-xs text-muted-foreground w-full mb-1">Sugestões rápidas:</p>
-                {products?.slice(0, 4).map(p => (
-                  <Button 
-                    key={p.id} 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-xs border-dashed"
-                    onClick={() => addToCart(p.internalCode || p.barcode || p.id)}
-                  >
-                    {p.name}
-                  </Button>
-                ))}
-              </div>
             </CardContent>
           </Card>
 
@@ -244,7 +225,7 @@ export default function POSPage() {
                       <TableRow key={item.id}>
                         <TableCell>
                           <div className="font-medium text-sm">{item.name}</div>
-                          <div className="text-[10px] text-muted-foreground">INT: {item.internalCode} {item.size !== "Padrão" && `• Tam: ${item.size}`}</div>
+                          <div className="text-[10px] text-muted-foreground uppercase">{item.brand} | {item.model}</div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -258,7 +239,7 @@ export default function POSPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-sm font-medium">R$ {item.price.toFixed(2)}</TableCell>
-                        <TableCell className="font-bold text-sm">R$ {(item.price * item.quantity).toFixed(2)}</TableCell>
+                        <TableCell className="font-bold text-sm text-primary">R$ {(item.price * item.quantity).toFixed(2)}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeItem(item.id)}>
                             <Trash2 className="h-4 w-4" />
@@ -282,10 +263,6 @@ export default function POSPage() {
               <div className="flex justify-between text-lg opacity-80">
                 <span>Subtotal</span>
                 <span>R$ {total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-lg opacity-80">
-                <span>Descontos</span>
-                <span>R$ 0,00</span>
               </div>
               <div className="border-t border-white/20 pt-4 flex justify-between text-3xl font-bold">
                 <span>TOTAL</span>
