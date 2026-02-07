@@ -1,12 +1,12 @@
+
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LayoutGrid, Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { LayoutGrid, Loader2, AlertCircle, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useAuth } from "./lib/auth-store";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -35,93 +35,123 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen w-screen overflow-hidden bg-background p-4">
-      <div className="w-full max-w-[380px] space-y-6 animate-in fade-in zoom-in duration-500">
-        <div className="flex flex-col items-center text-center space-y-2">
-          <div className="bg-card p-3 rounded-2xl shadow-xl border border-border">
-            <LayoutGrid className="h-8 w-8 text-primary" />
+    <div className="flex h-screen w-screen overflow-hidden bg-background">
+      {/* Lateral de Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-primary relative overflow-hidden flex-col justify-between p-12">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent/20" />
+        
+        {/* Elementos Decorativos de Fundo */}
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-black/20 rounded-full blur-2xl" />
+
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="bg-white/10 p-2.5 rounded-xl backdrop-blur-md border border-white/20">
+            <LayoutGrid className="h-8 w-8 text-white" />
           </div>
-          <div>
-            <h1 className="text-3xl font-headline font-bold text-foreground tracking-tight">NexusFlow</h1>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
-              Gestão Empresarial
-            </p>
-          </div>
+          <h1 className="text-3xl font-headline font-bold text-white tracking-tight">NexusFlow</h1>
         </div>
 
-        <Card className="border-none shadow-prominent bg-card rounded-3xl overflow-hidden">
-          <CardContent className="p-8 pt-10">
-            <form onSubmit={handleLogin} className="space-y-5">
-              {error && (
-                <Alert variant="destructive" className="py-2 px-3 rounded-xl border-none bg-destructive/10">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-xs font-medium">{error}</AlertDescription>
-                </Alert>
-              )}
+        <div className="relative z-10 space-y-6 max-w-md">
+          <h2 className="text-5xl font-headline font-bold text-white leading-tight">
+            Gestão Inteligente para o seu Negócio.
+          </h2>
+          <p className="text-lg text-primary-foreground/80 leading-relaxed">
+            Potencialize suas operações com nossa plataforma integrada de estoque, vendas e análise de dados.
+          </p>
+        </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-[11px] font-bold uppercase text-muted-foreground ml-1">
-                  E-mail Corporativo
-                </Label>
-                <Input 
-                  id="email"
-                  type="email" 
-                  placeholder="exemplo@nexusflow.com" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-xl border-border bg-background h-12 focus:ring-primary/20 transition-all"
-                  required
-                />
-              </div>
+        <div className="relative z-10 flex items-center gap-4 text-primary-foreground/60 text-xs font-bold uppercase tracking-widest">
+          <span>&copy; 2024 NexusFlow Systems</span>
+          <span className="h-1 w-1 bg-current rounded-full" />
+          <span>Segurança Enterprise</span>
+        </div>
+      </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="pass" className="text-[11px] font-bold uppercase text-muted-foreground ml-1">
+      {/* Área de Login */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-card shadow-2xl relative z-20">
+        <div className="w-full max-w-sm space-y-8 animate-in fade-in slide-in-from-right-4 duration-700">
+          <div className="lg:hidden flex flex-col items-center text-center mb-8">
+            <LayoutGrid className="h-10 w-10 text-primary mb-2" />
+            <h1 className="text-3xl font-headline font-bold text-foreground">NexusFlow</h1>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-2xl font-headline font-bold text-foreground tracking-tight">Acesse sua conta</h3>
+            <p className="text-muted-foreground text-sm">Insira suas credenciais corporativas abaixo.</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-6">
+            {error && (
+              <Alert variant="destructive" className="py-3 rounded-xl border-none bg-destructive/10">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs font-medium">{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
+                E-mail Corporativo
+              </Label>
+              <Input 
+                id="email"
+                type="email" 
+                placeholder="nome@empresa.com" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="rounded-xl border-border bg-background h-12 focus:ring-primary/20 transition-all text-sm"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="pass" className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
                   Senha de Acesso
                 </Label>
-                <div className="relative">
-                  <Input 
-                    id="pass"
-                    type={showPassword ? "text" : "password"} 
-                    placeholder="••••••••" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="rounded-xl border-border bg-background h-12 focus:ring-primary/20 transition-all pr-10"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
+                <button type="button" className="text-[10px] font-bold text-primary hover:underline uppercase">
+                  Esqueci a senha
+                </button>
               </div>
-
-              <Button 
-                type="submit"
-                className="w-full h-12 rounded-xl bg-primary hover:bg-accent text-primary-foreground font-bold tracking-wide transition-all shadow-lg shadow-primary/20 mt-2"
-                disabled={isLoggingIn}
-              >
-                {isLoggingIn ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  "ENTRAR NO NEXUSFLOW"
-                )}
-              </Button>
-            </form>
-            
-            <div className="mt-8 pt-6 border-t border-border/50 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest opacity-60">
-                Acesso Seguro Verificado
-              </p>
+              <div className="relative">
+                <Input 
+                  id="pass"
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="••••••••" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="rounded-xl border-border bg-background h-12 focus:ring-primary/20 transition-all pr-12 text-sm"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-        
-        <p className="text-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-          &copy; 2024 NexusFlow Systems
-        </p>
+
+            <Button 
+              type="submit"
+              className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold tracking-wide transition-all shadow-xl shadow-primary/20"
+              disabled={isLoggingIn}
+            >
+              {isLoggingIn ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                "ENTRAR NO SISTEMA"
+              )}
+            </Button>
+          </form>
+          
+          <div className="pt-8 border-t border-border flex items-center justify-center gap-2 opacity-50">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              Acesso Criptografado
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
