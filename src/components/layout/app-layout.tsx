@@ -63,32 +63,32 @@ function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border bg-sidebar shadow-xl">
-      <SidebarHeader className="p-4 flex items-center gap-3 overflow-hidden">
+      <SidebarHeader className="p-4 flex items-center justify-center overflow-hidden">
         <div className="bg-primary p-2 rounded-xl text-white shrink-0 shadow-lg shadow-primary/20">
           <Shirt className="h-6 w-6" />
         </div>
-        <span className="font-headline font-bold text-xl text-primary truncate group-data-[collapsible=icon]:hidden tracking-tight">FashionFlow</span>
+        <span className="font-headline font-bold text-xl text-primary truncate group-data-[collapsible=icon]:hidden tracking-tight ml-3">FashionFlow</span>
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
           {visibleItems.map((item) => (
             <SidebarMenuItem key={item.url}>
-              <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title} className="rounded-xl h-11">
+              <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title} className="rounded-xl h-11 flex justify-center">
                 <a href={item.url} className="flex items-center gap-3">
                   <item.icon className="h-5 w-5" />
-                  <span className="font-semibold">{item.title}</span>
+                  <span className="font-semibold group-data-[collapsible=icon]:hidden">{item.title}</span>
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t border-border mt-auto overflow-hidden">
-        <div className="flex items-center gap-3 mb-4 px-2 group-data-[collapsible=icon]:px-0">
+      <SidebarFooter className="p-2 border-t border-border mt-auto overflow-hidden flex flex-col items-center gap-4">
+        <div className="flex items-center justify-center w-full">
           <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
             <User className="h-5 w-5 text-primary" />
           </div>
-          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+          <div className="flex flex-col ml-3 group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-bold truncate max-w-[120px]">
               {isAdmin ? "Administrador" : "Caixa 01"}
             </span>
@@ -100,7 +100,7 @@ function AppSidebar() {
             logout();
             window.location.href = "/";
           }} 
-          className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl h-11"
+          className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-xl h-11 flex justify-center w-full"
           tooltip="Sair"
         >
           <LogOut className="h-5 w-5" />
