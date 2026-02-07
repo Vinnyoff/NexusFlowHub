@@ -15,6 +15,9 @@ import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore
 interface CartItem {
   id: string;
   name: string;
+  brand: string;
+  model: string;
+  category: string;
   size: string;
   price: number;
   quantity: number;
@@ -42,7 +45,6 @@ export default function POSPage() {
   const { data: products, isLoading: isLoadingProducts } = useCollection(productsQuery);
 
   const addToCart = (code: string) => {
-    // Busca por código interno (EAN-8) ou código original (EAN-13)
     const product = products?.find(p => p.internalCode === code || p.barcode === code || p.id === code);
     
     if (product) {
@@ -54,7 +56,10 @@ export default function POSPage() {
         return [...prev, { 
           id: product.id, 
           name: product.name, 
-          size: product.size, 
+          brand: product.brand || "Geral",
+          model: product.model || "-",
+          category: product.category || "Geral",
+          size: product.size || "Padrão", 
           price: product.price, 
           quantity: 1,
           barcode: product.barcode,
@@ -62,7 +67,7 @@ export default function POSPage() {
         }];
       });
       setBarcodeInput("");
-      toast({ title: "Produto adicionado", description: `${product.name} (${product.size})` });
+      toast({ title: "Produto adicionado", description: `${product.name}` });
     } else {
       toast({ variant: "destructive", title: "Erro", description: "Produto não encontrado." });
     }
@@ -98,6 +103,7 @@ export default function POSPage() {
       const saleId = crypto.randomUUID();
       const saleDocRef = doc(firestore, "users", user.uid, "sales", saleId);
 
+      // Salva itens denormalizados para histórico rápido
       const saleData = {
         id: saleId,
         dateTime: new Date().toISOString(),
@@ -105,12 +111,21 @@ export default function POSPage() {
         totalAmount: total,
         userId: user.uid,
         paymentMethod,
-        saleItems: cart.map(item => item.id)
+        saleItems: cart.map(item => ({
+          productId: item.id,
+          name: item.name,
+          brand: item.brand,
+          model: item.model,
+          category: item.category,
+          quantity: item.quantity,
+          price: item.price
+        }))
       };
 
       const batch = writeBatch(firestore);
       batch.set(saleDocRef, saleData);
 
+      // Reduz estoque e cria subcoleção SaleItems
       cart.forEach(item => {
         const saleItemId = crypto.randomUUID();
         const itemRef = doc(firestore, "users", user.uid, "sales", saleId, "saleItems", saleItemId);
@@ -121,6 +136,15 @@ export default function POSPage() {
           quantity: item.quantity,
           price: item.price
         });
+
+        // Atualização de estoque (opcional aqui ou via trigger se houvesse)
+        const productRef = doc(firestore, "products", item.id);
+        const product = products?.find(p => p.id === item.id);
+        if (product) {
+          batch.update(productRef, {
+            quantity: Math.max(0, (product.quantity || 0) - item.quantity)
+          });
+        }
       });
 
       await batch.commit();
@@ -135,7 +159,7 @@ export default function POSPage() {
       toast({ 
         variant: "destructive", 
         title: "Erro ao processar", 
-        description: error.message || "Não foi possível registrar a venda no sistema." 
+        description: error.message || "Não foi possível registrar a venda." 
       });
     } finally {
       setIsProcessing(false);
@@ -150,7 +174,7 @@ export default function POSPage() {
             <CardHeader>
               <CardTitle className="font-headline flex items-center gap-2">
                 <ScanBarcode className="h-6 w-6 text-primary" />
-                Leitura de Código (Interno ou Fábrica)
+                Leitura de Código
               </CardTitle>
             </CardHeader>
             <CardContent>

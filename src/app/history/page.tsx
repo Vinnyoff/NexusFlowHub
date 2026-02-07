@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar, Filter, Eye, Download, Loader2, Package } from "lucide-react";
+import { Search, Calendar, Filter, Eye, Download, Loader2, Package, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy } from "firebase/firestore";
@@ -15,14 +15,6 @@ export default function SalesHistory() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  // Busca de produtos para resolver nomes e detalhes no histórico
-  const productsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, "products");
-  }, [firestore]);
-
-  const { data: products } = useCollection(productsQuery);
-
   // Busca de vendas ordenadas por data (mais recente primeiro)
   const salesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -30,11 +22,6 @@ export default function SalesHistory() {
   }, [firestore, user]);
 
   const { data: sales, isLoading } = useCollection(salesQuery);
-
-  // Função auxiliar para encontrar detalhes do produto pelo ID
-  const getProductDetails = (productId: string) => {
-    return products?.find(p => p.id === productId);
-  };
 
   return (
     <AppLayout>
@@ -73,76 +60,93 @@ export default function SalesHistory() {
               <Table>
                 <TableHeader className="bg-muted/10">
                   <TableRow>
-                    <TableHead className="pl-6 h-14">ID Venda</TableHead>
-                    <TableHead className="h-14">Produtos</TableHead>
-                    <TableHead className="h-14">Data e Hora</TableHead>
+                    <TableHead className="pl-6 h-14">Venda</TableHead>
+                    <TableHead className="h-14">Produtos & Quantidade</TableHead>
+                    <TableHead className="h-14">Data</TableHead>
                     <TableHead className="h-14">Pagamento</TableHead>
-                    <TableHead className="h-14">Valor Total</TableHead>
+                    <TableHead className="h-14">Total Venda</TableHead>
                     <TableHead className="text-right pr-6 h-14">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sales?.map((sale) => (
-                    <TableRow key={sale.id} className="group hover:bg-primary/[0.02]">
+                    <TableRow key={sale.id} className="group hover:bg-primary/[0.02] border-b border-border/50">
                       <TableCell className="pl-6 font-medium text-primary">
-                        <span className="text-xs font-mono bg-primary/5 px-2 py-1 rounded">
+                        <span className="text-[10px] font-mono bg-primary/5 px-2 py-1 rounded border border-primary/10">
                           #{sale.id.substring(0, 8)}
                         </span>
                       </TableCell>
-                      <TableCell className="max-w-md py-4">
-                        <div className="space-y-3">
-                          {sale.saleItems?.map((productId: string, idx: number) => {
-                            const product = getProductDetails(productId);
-                            return (
-                              <div key={`${sale.id}-${productId}-${idx}`} className="flex items-start gap-2">
-                                <div className="p-1.5 bg-muted rounded-lg shrink-0">
-                                  <Package className="h-3 w-3 text-muted-foreground" />
+                      <TableCell className="max-w-xl py-4">
+                        <div className="space-y-4">
+                          {sale.saleItems?.map((item: any, idx: number) => (
+                            <div key={`${sale.id}-${idx}`} className="flex items-center justify-between gap-8 p-2 rounded-lg bg-muted/5 group-hover:bg-white/50 transition-colors">
+                              <div className="flex items-start gap-3 flex-1">
+                                <div className="p-2 bg-primary/5 rounded-xl shrink-0">
+                                  <Package className="h-4 w-4 text-primary opacity-60" />
                                 </div>
                                 <div className="flex flex-col">
-                                  <span className="text-sm font-bold leading-none">
-                                    {product?.name || "Produto não localizado"}
+                                  <span className="text-sm font-bold leading-tight text-foreground">
+                                    {item.name || "Produto não identificado"}
                                   </span>
-                                  <span className="text-[10px] text-muted-foreground uppercase mt-1">
-                                    {product?.brand || '-'} | {product?.model || '-'}
-                                  </span>
-                                  {product?.category && (
-                                    <Badge variant="secondary" className="w-fit mt-1 text-[8px] h-4 px-1 py-0 font-bold uppercase border-none bg-muted/50">
-                                      {product.category}
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-tight">
+                                      {item.brand || '-'} | {item.model || '-'}
+                                    </span>
+                                    <Badge variant="secondary" className="text-[8px] h-4 px-1 py-0 font-bold uppercase bg-muted/30 text-muted-foreground border-none">
+                                      {item.category || "Geral"}
                                     </Badge>
-                                  )}
+                                  </div>
                                 </div>
                               </div>
-                            );
-                          })}
+                              
+                              <div className="flex items-center gap-6 text-right shrink-0">
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Qtd</span>
+                                  <span className="text-sm font-black text-foreground">{item.quantity}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Unit.</span>
+                                  <span className="text-xs font-medium">R$ {item.price?.toFixed(2)}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] text-primary uppercase font-bold">Subtotal</span>
+                                  <span className="text-sm font-black text-primary">
+                                    R$ {(item.price * item.quantity).toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm">
-                        {new Date(sale.dateTime).toLocaleString('pt-BR', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                      <TableCell className="text-sm whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-foreground">
+                            {new Date(sale.dateTime).toLocaleDateString('pt-BR')}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(sale.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="font-bold text-[10px] uppercase bg-white">
+                        <Badge variant="outline" className="font-bold text-[9px] uppercase bg-white border-border shadow-sm px-2">
                           {sale.paymentMethod === 'CARD' ? 'Cartão' : 
                            sale.paymentMethod === 'CASH' ? 'Dinheiro' : 
-                           sale.paymentMethod === 'PIX' ? 'Pix' : sale.paymentMethod}
+                           sale.paymentMethod === 'PIX' ? 'Pix' : sale.paymentMethod || '---'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-black text-primary">
+                      <TableCell className="font-black text-primary text-base">
                         R$ {sale.totalAmount?.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right pr-6">
-                        <Button variant="ghost" size="sm" className="h-8 rounded-lg gap-2 text-primary hover:bg-primary/10">
-                          <Eye className="h-4 w-4" /> Detalhes
+                        <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl text-primary hover:bg-primary/10">
+                          <Eye className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
                   ))}
-                  {sales?.length === 0 && (
+                  {(!sales || sales.length === 0) && !isLoading && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-32 opacity-30">
                         <Package className="h-16 w-16 mx-auto mb-4" />
