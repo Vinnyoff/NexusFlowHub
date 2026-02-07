@@ -1,7 +1,16 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { onAuthStateChanged, User, signOut, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { 
+  onAuthStateChanged, 
+  User, 
+  signOut, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  signInAnonymously 
+} from "firebase/auth";
 import { useAuth as useFirebaseAuth } from "@/firebase";
 
 export type UserRole = "ADM" | "CASHIER";
@@ -28,12 +37,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(firebaseAuth, (u) => {
+      setUser(u);
       if (u) {
-        setUser(u);
-        setRole(ADMIN_EMAILS.includes(u.email || "") ? "ADM" : "CASHIER");
+        // Persistência de Role para protótipo
+        const savedRole = localStorage.getItem('ff_user_role') as UserRole;
+        if (u.email) {
+          const newRole = ADMIN_EMAILS.includes(u.email) ? "ADM" : "CASHIER";
+          setRole(newRole);
+          localStorage.setItem('ff_user_role', newRole);
+        } else if (savedRole) {
+          setRole(savedRole);
+        } else {
+          setRole("CASHIER");
+        }
       } else {
-        setUser(null);
         setRole(null);
+        localStorage.removeItem('ff_user_role');
       }
       setLoading(false);
     });
@@ -43,33 +62,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, pass: string) => {
     setLoading(true);
     try {
-      let valid = false;
-      let newRole: UserRole | null = null;
-
-      // Validação das credenciais solicitadas
-      if ((email === "admin@fashionflow.com" && pass === "admin") || 
-          (email === "jairobraganca2020@gmail.com" && pass === "Jairo@Braganca")) {
-        valid = true;
-        newRole = "ADM";
-      } else if (email === "caixa@fashionflow.com" && pass === "caixa") {
-        valid = true;
-        newRole = "CASHIER";
-      }
-
-      if (valid && newRole) {
-        // No protótipo, simulamos o sucesso. Para persistência real com Firestore Rules,
-        // o usuário precisaria estar no Firebase Auth.
-        // Simulamos o login bem-sucedido alterando o estado local para ADM se necessário
-        setRole(newRole);
+      // Tenta login real via Firebase Auth
+      try {
+        await signInWithEmailAndPassword(firebaseAuth, email, pass);
         setLoading(false);
         return { success: true };
-      } else {
-        setLoading(false);
-        return { success: false, message: "E-mail ou senha incorretos." };
+      } catch (e) {
+        // Fallback: Se o usuário não existir no Auth ainda, usamos as credenciais mockadas
+        // mas entramos anonimamente para ter um 'request.auth' válido no Firestore
+        const isAdminCreds = (email === "admin@fashionflow.com" && pass === "admin") || 
+                            (email === "jairobraganca2020@gmail.com" && pass === "Jairo@Braganca");
+        const isCashierCreds = email === "caixa@fashionflow.com" && pass === "caixa";
+
+        if (isAdminCreds || isCashierCreds) {
+          const newRole = isAdminCreds ? "ADM" : "CASHIER";
+          localStorage.setItem('ff_user_role', newRole);
+          await signInAnonymously(firebaseAuth);
+          setLoading(false);
+          return { success: true };
+        }
+        throw e;
       }
     } catch (error: any) {
       setLoading(false);
-      return { success: false, message: error.message || "Erro ao autenticar." };
+      return { success: false, message: "E-mail ou senha incorretos." };
     }
   };
 
@@ -77,10 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(firebaseAuth, provider);
-      const u = result.user;
-      setUser(u);
-      setRole(ADMIN_EMAILS.includes(u.email || "") ? "ADM" : "CASHIER");
+      await signInWithPopup(firebaseAuth, provider);
       setLoading(false);
       return { success: true };
     } catch (error: any) {
@@ -91,8 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     await signOut(firebaseAuth);
-    setUser(null);
-    setRole(null);
+    localStorage.removeItem('ff_user_role');
   };
 
   const isAdmin = role === "ADM";
