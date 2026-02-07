@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef } from "react";
@@ -228,7 +227,7 @@ export default function POSPage() {
                     <TableRow>
                       <TableHead>Produto</TableHead>
                       <TableHead>Qtd</TableHead>
-                      <TableHead>Unitário</TableHead>
+                      <TableHead>Valor Unit.</TableHead>
                       <TableHead>Total</TableHead>
                       <TableHead className="text-right"></TableHead>
                     </TableRow>

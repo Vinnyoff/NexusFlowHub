@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -189,7 +188,7 @@ export default function SalesHistory() {
                           <div className="grid grid-cols-12 gap-2 text-[10px] font-black uppercase text-muted-foreground mb-1 px-2">
                             <div className="col-span-5">Produto</div>
                             <div className="col-span-2 text-center">Qtd</div>
-                            <div className="col-span-2 text-right">Unitário</div>
+                            <div className="col-span-2 text-right">Valor Unit.</div>
                             <div className="col-span-3 text-right">Subtotal</div>
                           </div>
                           {sale.saleItems?.map((item: any, idx: number) => {
