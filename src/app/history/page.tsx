@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -6,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar as CalendarIcon, Filter, Eye, Download, Loader2, Package, Trash2, AlertTriangle, CalendarDays } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Filter, Eye, Download, Loader2, Package, Trash2, AlertTriangle, CalendarDays, ChevronDown, ChevronUp, PlusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, where, writeBatch, doc } from "firebase/firestore";
@@ -23,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 export default function SalesHistory() {
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -31,6 +33,7 @@ export default function SalesHistory() {
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [expandedSales, setExpandedSales] = useState<Set<string>>(new Set());
   
   const firestore = useFirestore();
   const { user } = useUser();
@@ -83,6 +86,16 @@ export default function SalesHistory() {
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const toggleSaleExpansion = (id: string) => {
+    const newExpanded = new Set(expandedSales);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedSales(newExpanded);
   };
 
   const formattedSelectedDate = new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', {
@@ -168,7 +181,7 @@ export default function SalesHistory() {
                 <TableHeader className="bg-muted/10">
                   <TableRow className="hover:bg-transparent border-b border-border/50">
                     <TableHead className="pl-6 h-14">Venda</TableHead>
-                    <TableHead className="h-14">Detalhamento dos Itens</TableHead>
+                    <TableHead className="h-14">Itens Vendidos</TableHead>
                     <TableHead className="h-14">Horário</TableHead>
                     <TableHead className="h-14">Pagamento</TableHead>
                     <TableHead className="h-14">Total Geral</TableHead>
@@ -176,70 +189,97 @@ export default function SalesHistory() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSales.map((sale) => (
-                    <TableRow key={sale.id} className="group hover:bg-primary/[0.01] border-b border-border/40 transition-colors">
-                      <TableCell className="pl-6 font-medium text-primary">
-                        <span className="text-[10px] font-mono bg-primary/5 px-2 py-1 rounded border border-primary/10 select-all">
-                          #{sale.id.substring(0, 8)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="max-w-2xl py-4">
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-12 gap-2 text-[10px] font-black uppercase text-muted-foreground mb-1 px-2">
-                            <div className="col-span-5">Produto</div>
-                            <div className="col-span-2 text-center">Qtd</div>
-                            <div className="col-span-2 text-right">Valor Unit.</div>
-                            <div className="col-span-3 text-right">Subtotal</div>
-                          </div>
-                          {sale.saleItems?.map((item: any, idx: number) => {
-                            const price = Number(item.price) || 0;
-                            const quantity = Number(item.quantity) || 0;
-                            const subtotal = price * quantity;
-                            
-                            return (
-                              <div key={`${sale.id}-${idx}`} className="grid grid-cols-12 items-center gap-2 p-2 rounded-xl bg-muted/5 group-hover:bg-white border border-transparent hover:border-border/40 transition-all shadow-sm">
-                                <div className="col-span-5 flex flex-col min-w-0">
-                                  <span className="text-sm font-bold text-foreground truncate">{item.name || "Produto"}</span>
-                                  <span className="text-[9px] text-muted-foreground truncate">{item.brand} | {item.model}</span>
-                                </div>
-                                <div className="col-span-2 text-center">
-                                  <Badge className="bg-primary/10 text-primary hover:bg-primary/20 text-[11px] font-black">{quantity}</Badge>
-                                </div>
-                                <div className="col-span-2 text-right">
-                                  <span className="text-[11px] font-medium text-muted-foreground">R$ {price.toFixed(2)}</span>
-                                </div>
-                                <div className="col-span-3 text-right">
-                                  <span className="text-sm font-black text-primary">R$ {subtotal.toFixed(2)}</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="font-black text-foreground text-base">
-                            {new Date(sale.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  {filteredSales.map((sale) => {
+                    const isExpanded = expandedSales.has(sale.id);
+                    const totalItems = sale.saleItems?.length || 0;
+                    const itemsToShow = isExpanded ? sale.saleItems : (sale.saleItems?.slice(0, 1) || []);
+
+                    return (
+                      <TableRow key={sale.id} className="group hover:bg-primary/[0.01] border-b border-border/40 transition-colors">
+                        <TableCell className="pl-6 font-medium text-primary">
+                          <span className="text-[10px] font-mono bg-primary/5 px-2 py-1 rounded border border-primary/10 select-all">
+                            #{sale.id.substring(0, 8)}
                           </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-bold text-[10px] uppercase bg-white border-border shadow-sm px-3 h-6">
-                          {sale.paymentMethod === 'CARD' ? 'Cartão' : 
-                           sale.paymentMethod === 'CASH' ? 'Dinheiro' : 
-                           sale.paymentMethod === 'PIX' ? 'Pix' : sale.paymentMethod || '---'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-black text-primary text-lg">
-                        R$ {(Number(sale.totalAmount) || 0).toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right pr-6">
-                        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl text-primary hover:bg-primary/10">
-                          <Eye className="h-5 w-5" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell className="max-w-2xl py-4">
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-12 gap-2 text-[10px] font-black uppercase text-muted-foreground mb-1 px-2">
+                              <div className="col-span-5">Produto</div>
+                              <div className="col-span-2 text-center">Qtd</div>
+                              <div className="col-span-2 text-right">Valor Unit.</div>
+                              <div className="col-span-3 text-right">Subtotal</div>
+                            </div>
+                            
+                            {itemsToShow.map((item: any, idx: number) => {
+                              const price = Number(item.price) || 0;
+                              const quantity = Number(item.quantity) || 0;
+                              const subtotal = price * quantity;
+                              
+                              return (
+                                <div key={`${sale.id}-${idx}`} className="grid grid-cols-12 items-center gap-2 p-2 rounded-xl bg-muted/5 group-hover:bg-white border border-transparent hover:border-border/40 transition-all shadow-sm">
+                                  <div className="col-span-5 flex flex-col min-w-0">
+                                    <span className="text-sm font-bold text-foreground truncate">{item.name || "Produto"}</span>
+                                    <span className="text-[9px] text-muted-foreground truncate">{item.brand} | {item.model}</span>
+                                  </div>
+                                  <div className="col-span-2 text-center">
+                                    <Badge className="bg-primary/10 text-primary hover:bg-primary/20 text-[11px] font-black">{quantity}</Badge>
+                                  </div>
+                                  <div className="col-span-2 text-right">
+                                    <span className="text-[11px] font-medium text-muted-foreground">R$ {price.toFixed(2)}</span>
+                                  </div>
+                                  <div className="col-span-3 text-right">
+                                    <span className="text-sm font-black text-primary">R$ {subtotal.toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {totalItems > 1 && (
+                              <div className="pt-2 px-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => toggleSaleExpansion(sale.id)}
+                                  className={cn(
+                                    "h-8 text-[10px] font-black uppercase tracking-widest gap-2 rounded-lg transition-all",
+                                    isExpanded ? "text-muted-foreground" : "text-primary bg-primary/5 hover:bg-primary/10"
+                                  )}
+                                >
+                                  {isExpanded ? (
+                                    <>Ocultar detalhes <ChevronUp className="h-3 w-3" /></>
+                                  ) : (
+                                    <>Ver mais ({totalItems - 1}) produtos <ChevronDown className="h-3 w-3" /></>
+                                  )}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="font-black text-foreground text-base">
+                              {new Date(sale.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="font-bold text-[10px] uppercase bg-white border-border shadow-sm px-3 h-6">
+                            {sale.paymentMethod === 'CARD' ? 'Cartão' : 
+                             sale.paymentMethod === 'CASH' ? 'Dinheiro' : 
+                             sale.paymentMethod === 'PIX' ? 'Pix' : sale.paymentMethod || '---'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-black text-primary text-lg">
+                          R$ {(Number(sale.totalAmount) || 0).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right pr-6">
+                          <Button variant="ghost" size="sm" className="h-10 w-10 p-0 rounded-xl text-primary hover:bg-primary/10">
+                            <Eye className="h-5 w-5" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                   {filteredSales.length === 0 && !isLoading && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-32 opacity-30">
