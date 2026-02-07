@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from "@/components/ui/sidebar";
-import { LayoutGrid, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon } from "lucide-react";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { LayoutGrid, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon, Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/lib/auth-store";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className="h-8 w-8 rounded-full text-foreground hover:bg-white/10"
+      className="h-8 w-8 rounded-full text-foreground hover:bg-muted"
       title={isDark ? "Mudar para modo claro" : "Mudar para modo escuro"}
     >
       {isDark ? (
@@ -60,7 +61,7 @@ function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border bg-card shadow-xl">
-      <SidebarHeader className="p-4 flex items-center justify-center overflow-hidden">
+      <SidebarHeader className="p-4 flex items-center justify-center">
         <div className="bg-primary/10 p-2 rounded-xl text-primary shrink-0">
           <LayoutGrid className="h-6 w-6" />
         </div>
@@ -69,21 +70,19 @@ function AppSidebar() {
         <SidebarMenu>
           {visibleItems.map((item) => (
             <SidebarMenuItem key={item.url}>
-              <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title} className="rounded-xl h-11 flex justify-center hover:bg-primary/10 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground">
+              <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title} className="rounded-xl h-11 hover:bg-primary/10 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground">
                 <a href={item.url} className="flex items-center gap-3">
                   <item.icon className="h-5 w-5" />
-                  <span className="font-semibold group-data-[collapsible=icon]:hidden">{item.title}</span>
+                  <span className="font-semibold">{item.title}</span>
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="p-2 border-t border-border mt-auto overflow-hidden flex flex-col items-center gap-4">
-        <div className="flex items-center justify-center w-full">
-          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
-            <User className="h-5 w-5 text-primary" />
-          </div>
+      <SidebarFooter className="p-2 border-t border-border mt-auto flex flex-col items-center gap-4">
+        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+          <User className="h-5 w-5 text-primary" />
         </div>
         <SidebarMenuButton 
           onClick={() => {
@@ -102,10 +101,11 @@ function AppSidebar() {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="bg-background">
-        <header className="flex h-14 items-center px-6 gap-4 sticky top-0 bg-card border-b border-border z-10 shadow-md">
+      <SidebarInset className="bg-background flex flex-col">
+        <header className="flex h-14 items-center px-4 md:px-6 gap-4 sticky top-0 bg-card border-b border-border z-20 shadow-sm">
+          <SidebarTrigger className="md:hidden" />
           <div className="flex items-center gap-2">
             <LayoutGrid className="h-5 w-5 text-primary" />
             <span className="font-headline font-bold text-foreground tracking-tight text-lg">NexusFlow</span>
@@ -113,8 +113,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex-1" />
           <ThemeToggle />
         </header>
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto bg-background">
-          {children}
+        <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
+          <div className="max-w-7xl mx-auto w-full">
+            {children}
+          </div>
         </main>
       </SidebarInset>
     </SidebarProvider>
