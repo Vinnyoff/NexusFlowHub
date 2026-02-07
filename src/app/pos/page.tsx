@@ -102,9 +102,14 @@ export default function POSPage() {
       const saleId = crypto.randomUUID();
       const saleDocRef = doc(firestore, "users", user.uid, "sales", saleId);
 
+      // Obter a data local no formato YYYY-MM-DD para filtragem precisa
+      const now = new Date();
+      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
       const saleData = {
         id: saleId,
-        dateTime: new Date().toISOString(),
+        dateTime: now.toISOString(),
+        localDate: localDate, // Campo chave para busca no histórico
         createdAt: serverTimestamp(),
         totalAmount: Number(total.toFixed(2)),
         userId: user.uid,

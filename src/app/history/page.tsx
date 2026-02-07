@@ -26,7 +26,11 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function SalesHistory() {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  // Inicializar com a data local YYYY-MM-DD
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   
@@ -38,38 +42,55 @@ export default function SalesHistory() {
   const salesQuery = useMemoFirebase(() => {
     if (!firestore || !user || !selectedDate) return null;
     
-    // Definir intervalo do dia selecionado (Início e Fim em ISO para comparação léxica)
-    const startOfDay = `${selectedDate}T00:00:00.000Z`;
-    const endOfDay = `${selectedDate}T23:59:59.999Z`;
+    // Consulta otimizada por data local exata (salva no novo campo localDate)
+    // Se não encontrar por localDate (registros antigos), tentamos por prefixo no dateTime
+    const startRange = `${selectedDate}T00:00:00.000Z`;
+    const endRange = `${selectedDate}T23:59:59.999Z`;
 
     return query(
       collection(firestore, "users", user.uid, "sales"), 
-      where("dateTime", ">=", startOfDay),
-      where("dateTime", "<=", endOfDay),
-      orderBy("dateTime", "desc")
+      where("localDate", "==", selectedDate)
+    );
+  }, [firestore, user, selectedDate]);
+
+  // Fallback para registros antigos que usavam apenas o formato ISO UTC no campo dateTime
+  const legacySalesQuery = useMemoFirebase(() => {
+    if (!firestore || !user || !selectedDate) return null;
+    const startRange = `${selectedDate}T00:00:00.000Z`;
+    const endRange = `${selectedDate}T23:59:59.999Z`;
+    return query(
+      collection(firestore, "users", user.uid, "sales"), 
+      where("dateTime", ">=", startRange),
+      where("dateTime", "<=", endRange)
     );
   }, [firestore, user, selectedDate]);
 
   const { data: sales, isLoading } = useCollection(salesQuery);
+  const { data: legacySales, isLoading: isLoadingLegacy } = useCollection(legacySalesQuery);
+
+  // Combinar e desduplicar resultados das duas consultas
+  const combinedSales = [...(sales || []), ...(legacySales || [])]
+    .filter((v, i, a) => a.findIndex(t => t.id === v.id) === i)
+    .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
 
   // Filtro de pesquisa por ID ou por nome de produto dentro da lista carregada
-  const filteredSales = sales?.filter(sale => {
+  const filteredSales = combinedSales.filter(sale => {
     const matchesId = sale.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesProduct = sale.saleItems?.some((item: any) => 
       item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.brand?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     return matchesId || matchesProduct;
-  }) || [];
+  });
 
   const handleDeleteDaySales = async () => {
-    if (!firestore || !user || !sales || sales.length === 0) return;
+    if (!firestore || !user || combinedSales.length === 0) return;
     
     setIsDeleting(true);
     const batch = writeBatch(firestore);
     
     try {
-      sales.forEach((sale) => {
+      combinedSales.forEach((sale) => {
         const saleRef = doc(firestore, "users", user.uid, "sales", sale.id);
         batch.delete(saleRef);
       });
@@ -109,7 +130,7 @@ export default function SalesHistory() {
             <p className="text-muted-foreground">Vendas registradas em <span className="font-bold text-foreground">{formattedSelectedDate}</span></p>
           </div>
           <div className="flex gap-2">
-            {isAdmin && sales && sales.length > 0 && (
+            {isAdmin && combinedSales.length > 0 && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" className="gap-2 rounded-xl h-11" disabled={isDeleting}>
@@ -123,7 +144,7 @@ export default function SalesHistory() {
                       <AlertTriangle className="h-5 w-5" /> Atenção: Ação Irreversível
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Você está prestes a excluir **todas as {sales.length} vendas** registradas em {formattedSelectedDate}. Esta ação não pode ser desfeita e removerá os dados permanentemente.
+                      Você está prestes a excluir **todas as {combinedSales.length} vendas** registradas em {formattedSelectedDate}. Esta ação não pode ser desfeita e removerá os dados permanentemente.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -164,7 +185,7 @@ export default function SalesHistory() {
 
         <Card className="border-none shadow-prominent overflow-hidden rounded-2xl">
           <CardContent className="p-0">
-            {isLoading ? (
+            {(isLoading || isLoadingLegacy) && combinedSales.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-32 gap-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 <p className="text-sm font-medium text-muted-foreground">Consultando base de dados...</p>
@@ -182,7 +203,7 @@ export default function SalesHistory() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSales?.map((sale) => (
+                  {filteredSales.map((sale) => (
                     <TableRow key={sale.id} className="group hover:bg-primary/[0.01] border-b border-border/40 transition-colors">
                       <TableCell className="pl-6 font-medium text-primary">
                         <span className="text-[10px] font-mono bg-primary/5 px-2 py-1 rounded border border-primary/10 select-all">
@@ -265,7 +286,7 @@ export default function SalesHistory() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {(!filteredSales || filteredSales.length === 0) && !isLoading && (
+                  {filteredSales.length === 0 && !isLoading && !isLoadingLegacy && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-32 opacity-30">
                         <div className="flex flex-col items-center">
