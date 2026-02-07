@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Trash2, Loader2, Package, Layers, Barcode, Sparkles } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Package, Layers, Barcode, Sparkles, Pencil } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,13 +16,14 @@ import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/app/lib/auth-store";
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [isAdding, setIsAdding] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("principal");
-  const [newProduct, setNewProduct] = useState({
+  const [formData, setFormData] = useState({
     name: "",
     brand: "",
     model: "",
@@ -51,12 +53,28 @@ export default function ProductsPage() {
 
   const handleGenerateBarcode = () => {
     const randomCode = `789${Math.floor(1000000000 + Math.random() * 9000000000)}`;
-    setNewProduct({ ...newProduct, barcode: randomCode });
+    setFormData({ ...formData, barcode: randomCode });
     toast({ title: "Código Gerado", description: "Um código de barras temporário foi atribuído." });
   };
 
+  const handleEdit = (product: any) => {
+    setEditingId(product.id);
+    setFormData({
+      name: product.name || "",
+      brand: product.brand || "",
+      model: product.model || "",
+      price: product.price?.toString() || "",
+      stock: product.quantity?.toString() || "",
+      variant: product.size || "Padrão",
+      category: product.category || "Geral",
+      barcode: product.barcode || ""
+    });
+    setIsDialogOpen(true);
+    setActiveTab("principal");
+  };
+
   const handleSaveProduct = () => {
-    if (!newProduct.name || !newProduct.price) {
+    if (!formData.name || !formData.price) {
       toast({ 
         variant: "destructive", 
         title: "Campos obrigatórios", 
@@ -69,42 +87,46 @@ export default function ProductsPage() {
       toast({ 
         variant: "destructive", 
         title: "Acesso negado", 
-        description: "Apenas administradores podem cadastrar itens." 
+        description: "Apenas administradores podem gerenciar itens." 
       });
       return;
     }
 
-    const productId = crypto.randomUUID();
-    // Se não houver código de barras, gera um aleatório curto
-    const barcode = newProduct.barcode || `NX-${Math.floor(1000 + Math.random() * 8999)}-${newProduct.variant.replace(/\s+/g, '')}`;
-    
-    const productData = {
-      id: productId,
-      name: newProduct.name,
-      brand: newProduct.brand,
-      model: newProduct.model,
-      category: newProduct.category || "Geral",
-      size: newProduct.variant,
-      price: parseFloat(newProduct.price) || 0,
-      quantity: parseInt(newProduct.stock) || 0,
-      barcode: barcode
+    const productData: any = {
+      name: formData.name,
+      brand: formData.brand,
+      model: formData.model,
+      category: formData.category || "Geral",
+      size: formData.variant,
+      price: parseFloat(formData.price) || 0,
+      quantity: parseInt(formData.stock) || 0,
+      barcode: formData.barcode || `NX-${Math.floor(1000 + Math.random() * 8999)}`
     };
 
-    const docRef = doc(firestore, "products", productId);
+    if (editingId) {
+      const docRef = doc(firestore, "products", editingId);
+      updateDocumentNonBlocking(docRef, productData);
+      toast({ 
+        title: "Item Atualizado", 
+        description: `${productData.name} foi atualizado com sucesso.` 
+      });
+    } else {
+      const productId = crypto.randomUUID();
+      const docRef = doc(firestore, "products", productId);
+      setDocumentNonBlocking(docRef, { ...productData, id: productId }, { merge: true });
+      toast({ 
+        title: "Item Registrado", 
+        description: `${productData.name} foi adicionado ao inventário.` 
+      });
+    }
     
-    setDocumentNonBlocking(docRef, productData, { merge: true });
-    
-    setIsAdding(false);
+    setIsDialogOpen(false);
     resetForm();
-    
-    toast({ 
-      title: "Item Registrado", 
-      description: `${productData.name} foi adicionado ao inventário.` 
-    });
   };
 
   const resetForm = () => {
-    setNewProduct({ 
+    setEditingId(null);
+    setFormData({ 
       name: "", 
       brand: "", 
       model: "", 
@@ -148,19 +170,21 @@ export default function ProductsPage() {
             <p className="text-muted-foreground">Controle central de mercadorias e insumos.</p>
           </div>
           
-          <Dialog open={isAdding} onOpenChange={(open) => {
-            setIsAdding(open);
-            if (open) resetForm();
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
           }}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-accent text-white gap-2">
+              <Button onClick={() => resetForm()} className="bg-primary hover:bg-accent text-white gap-2">
                 <Plus className="h-4 w-4" />
                 Novo Item
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[520px]">
               <DialogHeader>
-                <DialogTitle className="font-headline text-xl">Cadastrar Novo Item</DialogTitle>
+                <DialogTitle className="font-headline text-xl">
+                  {editingId ? "Editar Item" : "Cadastrar Novo Item"}
+                </DialogTitle>
               </DialogHeader>
               
               <Tabs defaultValue="principal" value={activeTab} onValueChange={setActiveTab} className="w-full mt-2">
@@ -178,8 +202,8 @@ export default function ProductsPage() {
                     <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Nome do Produto</Label>
                     <Input 
                       placeholder="Ex: Teclado Mecânico" 
-                      value={newProduct.name}
-                      onChange={e => setNewProduct({...newProduct, name: e.target.value})}
+                      value={formData.name}
+                      onChange={e => setFormData({...formData, name: e.target.value})}
                       className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                     />
                   </div>
@@ -188,8 +212,8 @@ export default function ProductsPage() {
                     <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Fabricante/Marca</Label>
                     <Input 
                       placeholder="Ex: Dell" 
-                      value={newProduct.brand}
-                      onChange={e => setNewProduct({...newProduct, brand: e.target.value})}
+                      value={formData.brand}
+                      onChange={e => setFormData({...formData, brand: e.target.value})}
                       className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                     />
                   </div>
@@ -198,8 +222,8 @@ export default function ProductsPage() {
                     <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Categoria</Label>
                     <Input 
                       placeholder="Ex: Eletrônicos" 
-                      value={newProduct.category}
-                      onChange={e => setNewProduct({...newProduct, category: e.target.value})}
+                      value={formData.category}
+                      onChange={e => setFormData({...formData, category: e.target.value})}
                       className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                     />
                   </div>
@@ -211,8 +235,8 @@ export default function ProductsPage() {
                         type="number" 
                         step="0.01" 
                         placeholder="0,00" 
-                        value={newProduct.price}
-                        onChange={e => setNewProduct({...newProduct, price: e.target.value})}
+                        value={formData.price}
+                        onChange={e => setFormData({...formData, price: e.target.value})}
                         className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                       />
                     </div>
@@ -221,8 +245,8 @@ export default function ProductsPage() {
                       <Input 
                         type="number" 
                         placeholder="0" 
-                        value={newProduct.stock}
-                        onChange={e => setNewProduct({...newProduct, stock: e.target.value})}
+                        value={formData.stock}
+                        onChange={e => setFormData({...formData, stock: e.target.value})}
                         className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                       />
                     </div>
@@ -236,8 +260,8 @@ export default function ProductsPage() {
                           <Barcode className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                           <Input 
                             placeholder="Aguardando leitura ou digitação..." 
-                            value={newProduct.barcode}
-                            onChange={e => setNewProduct({...newProduct, barcode: e.target.value})}
+                            value={formData.barcode}
+                            onChange={e => setFormData({...formData, barcode: e.target.value})}
                             className="rounded-xl border-primary/10 h-11 pl-10 text-sm bg-muted/20"
                           />
                         </div>
@@ -256,8 +280,8 @@ export default function ProductsPage() {
                       <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Modelo / SKU</Label>
                       <Input 
                         placeholder="Ex: K780-Wireless" 
-                        value={newProduct.model}
-                        onChange={e => setNewProduct({...newProduct, model: e.target.value})}
+                        value={formData.model}
+                        onChange={e => setFormData({...formData, model: e.target.value})}
                         className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                       />
                     </div>
@@ -265,8 +289,8 @@ export default function ProductsPage() {
                       <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Variante</Label>
                       <Input 
                         placeholder="Ex: Preto" 
-                        value={newProduct.variant}
-                        onChange={e => setNewProduct({...newProduct, variant: e.target.value})}
+                        value={formData.variant}
+                        onChange={e => setFormData({...formData, variant: e.target.value})}
                         className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
                       />
                     </div>
@@ -275,8 +299,10 @@ export default function ProductsPage() {
               </Tabs>
 
               <DialogFooter className="border-t pt-4">
-                <Button type="button" variant="ghost" size="sm" onClick={() => setIsAdding(false)} className="rounded-xl">Cancelar</Button>
-                <Button type="button" size="sm" onClick={handleSaveProduct} className="rounded-xl px-6 shadow-lg shadow-primary/20">Salvar Item</Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setIsDialogOpen(false)} className="rounded-xl">Cancelar</Button>
+                <Button type="button" size="sm" onClick={handleSaveProduct} className="rounded-xl px-6 shadow-lg shadow-primary/20">
+                  {editingId ? "Atualizar" : "Salvar Item"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -336,14 +362,24 @@ export default function ProductsPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right pr-6">
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleDelete(product.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8 text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleEdit(product)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleDelete(product.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
