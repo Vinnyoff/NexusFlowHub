@@ -1,68 +1,69 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Background: Escurecido para um tom de cinza-azulado fosco (Redução de brilho) */
-    --background: 210 20% 85%;
-    /* Text/Foreground: #0F172A */
+    /* Background: Branco Suave / Off-white para reduzir brilho */
+    --background: 210 20% 98%;
+    /* Text/Foreground: Nexus Dark */
     --foreground: 222 47% 11%;
     
-    /* Cards: Mantendo contraste com o novo fundo mais escuro */
-    --card: 210 20% 88%;
+    /* Cards: Cinza azulado muito claro */
+    --card: 210 20% 95%;
     --card-foreground: 222 47% 11%;
     
-    --popover: 210 20% 88%;
+    --popover: 210 20% 95%;
     --popover-foreground: 222 47% 11%;
     
-    /* Primary: Brilho reduzido em mais 20% (de L:38% para L:30%) */
-    --primary: 221 83% 30%;
+    /* Primary: Azul Corporativo (#2563EB) com brilho reduzido */
+    --primary: 221 83% 40%;
     --primary-foreground: 210 40% 98%;
     
-    --secondary: 210 20% 80%;
+    --secondary: 210 20% 90%;
     --secondary-foreground: 222 47% 11%;
     
-    --muted: 210 20% 80%;
+    --muted: 210 20% 90%;
     --muted-foreground: 215 16% 40%;
     
-    --accent: 210 20% 80%;
+    --accent: 210 20% 90%;
     --accent-foreground: 222 47% 11%;
     
     --destructive: 0 84% 40%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 214 32% 75%;
-    --input: 214 32% 75%;
-    --ring: 221 83% 30%;
+    --border: 214 32% 85%;
+    --input: 214 32% 85%;
+    --ring: 221 83% 40%;
     
     --radius: 0.75rem;
 
     /* Sidebar Light */
-    --sidebar-background: 210 20% 87%;
+    --sidebar-background: 210 20% 94%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 221 83% 30%;
+    --sidebar-primary: 221 83% 40%;
     --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 20% 83%;
+    --sidebar-accent: 210 20% 90%;
     --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 32% 75%;
-    --sidebar-ring: 221 83% 30%;
+    --sidebar-border: 214 32% 85%;
+    --sidebar-ring: 221 83% 40%;
   }
 
   .dark {
-    /* Background: #0F172A */
+    /* Background: Preto Azulado (#0F172A) */
     --background: 222 47% 11%;
     --foreground: 213 32% 91%;
     
-    /* Cards: #1E293B */
+    /* Cards: Azul Petróleo (#1E293B) */
     --card: 217 33% 17%;
     --card-foreground: 213 32% 91%;
     
     --popover: 217 33% 17%;
     --popover-foreground: 213 32% 91%;
     
-    /* Primary Action: Brilho reduzido em mais 20% (de L:46% para L:37%) */
-    --primary: 214 90% 37%;
+    /* Primary Action: Azul Vibrante (#3B82F6) */
+    --primary: 214 90% 60%;
     --primary-foreground: 222 47% 11%;
     
     --secondary: 217 33% 25%;
@@ -71,25 +72,25 @@
     --muted: 217 33% 17%;
     --muted-foreground: 215 16% 62%;
     
-    --accent: 221 83% 30%;
+    --accent: 221 83% 40%;
     --accent-foreground: 213 32% 91%;
     
-    --destructive: 0 84% 40%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
     
     --border: 217 33% 25%;
     --input: 217 33% 25%;
-    --ring: 214 90% 37%;
+    --ring: 214 90% 60%;
 
     /* Sidebar Dark */
     --sidebar-background: 217 33% 17%;
     --sidebar-foreground: 213 32% 91%;
-    --sidebar-primary: 214 90% 37%;
+    --sidebar-primary: 214 90% 60%;
     --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 221 83% 30%;
+    --sidebar-accent: 221 83% 40%;
     --sidebar-accent-foreground: 213 32% 91%;
     --sidebar-border: 217 33% 25%;
-    --sidebar-ring: 214 90% 37%;
+    --sidebar-ring: 214 90% 60%;
   }
 }
 
@@ -105,7 +106,7 @@
   }
 }
 
-/* Paleta de STATUS (Light Mode Final) */
+/* Paleta de STATUS (Light Mode) */
 .status-success { 
   color: #16A34A; 
   background-color: #DCFCE7; 
