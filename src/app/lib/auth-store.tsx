@@ -18,6 +18,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const ADMIN_EMAILS = ["admin@fashionflow.com", "jairobraganca2020@gmail.com"];
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
@@ -28,13 +30,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (savedUser) {
       const u = JSON.parse(savedUser);
       setUser(u);
-      setRole(u.email === "admin@fashionflow.com" ? "ADM" : "CASHIER");
+      setRole(ADMIN_EMAILS.includes(u.email) ? "ADM" : "CASHIER");
     }
 
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       if (u) {
         setUser(u);
-        setRole(u.email === "admin@fashionflow.com" ? "ADM" : "CASHIER");
+        setRole(ADMIN_EMAILS.includes(u.email || "") ? "ADM" : "CASHIER");
       }
       setLoading(false);
     });
@@ -45,11 +47,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     return new Promise<{ success: boolean; message?: string }>((resolve) => {
       setTimeout(() => {
-        // Verificação de credenciais para o protótipo
         let valid = false;
         let newRole: UserRole | null = null;
 
-        if (email === "admin@fashionflow.com" && pass === "admin") {
+        if ((email === "admin@fashionflow.com" && pass === "admin") || 
+            (email === "jairobraganca2020@gmail.com" && pass === "Jairo@Braganca")) {
           valid = true;
           newRole = "ADM";
         } else if (email === "caixa@fashionflow.com" && pass === "caixa") {
@@ -58,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (valid && newRole) {
-          const mockUser = { email, uid: "mock-uid-" + Date.now() } as User;
+          const mockUser = { email, uid: "uid-" + btoa(email) } as User;
           setUser(mockUser);
           setRole(newRole);
           localStorage.setItem("ff_mock_user", JSON.stringify(mockUser));
@@ -68,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoading(false);
           resolve({ success: false, message: "E-mail ou senha incorretos." });
         }
-      }, 1000);
+      }, 800);
     });
   };
 
