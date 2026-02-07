@@ -6,14 +6,59 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileUp, Upload, FileText, AlertCircle, CheckCircle2, Search, Loader2 } from "lucide-react";
+import { 
+  FileUp, 
+  Upload, 
+  FileText, 
+  AlertCircle, 
+  CheckCircle2, 
+  Search, 
+  Loader2,
+  Table as TableIcon,
+  ShoppingCart,
+  ArrowRight
+} from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+
+interface InvoiceProduct {
+  id: string;
+  name: string;
+  qty: number;
+  price: number;
+  total: number;
+  status: "new" | "exists";
+}
+
+const MOCK_INVOICE_PRODUCTS: InvoiceProduct[] = [
+  { id: "1", name: "Camiseta Basic Black M", qty: 25, price: 45.90, total: 1147.50, status: "exists" },
+  { id: "2", name: "Calça Jeans Slim Blue 42", qty: 10, price: 89.00, total: 890.00, status: "exists" },
+  { id: "3", name: "Jaqueta Bomber Nexus V2", qty: 5, price: 159.00, total: 795.00, status: "new" },
+  { id: "4", name: "Tênis Sport Tech White 40", qty: 8, price: 210.00, total: 1680.00, status: "new" },
+];
 
 export default function ImportPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [accessKey, setAccessKey] = useState("");
   const [isConsulting, setIsConsulting] = useState(false);
+  const [showProductsModal, setShowProductsModal] = useState(false);
   const { toast } = useToast();
 
   const handleSimulateUpload = () => {
@@ -23,11 +68,8 @@ export default function ImportPage() {
     });
     
     setTimeout(() => {
-      toast({
-        title: "Sucesso!",
-        description: "Nota importada e estoque atualizado.",
-      });
-    }, 2000);
+      setShowProductsModal(true);
+    }, 1500);
   };
 
   const handleConsultKey = () => {
@@ -41,19 +83,21 @@ export default function ImportPage() {
     }
 
     setIsConsulting(true);
-    toast({
-      title: "Consultando Sefaz",
-      description: "Buscando dados da NF-e pela chave de acesso...",
-    });
-
+    
+    // Simula tempo de resposta da Sefaz
     setTimeout(() => {
       setIsConsulting(false);
-      setAccessKey("");
-      toast({
-        title: "Sucesso!",
-        description: "Dados da NF-e recuperados e estoque atualizado.",
-      });
-    }, 2500);
+      setShowProductsModal(true);
+    }, 2000);
+  };
+
+  const handleFinalizeImport = () => {
+    setShowProductsModal(false);
+    setAccessKey("");
+    toast({
+      title: "Sucesso!",
+      description: "Produtos importados e estoque atualizado com sucesso.",
+    });
   };
 
   return (
@@ -82,7 +126,13 @@ export default function ImportPage() {
                       id="accessKey"
                       placeholder="0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000" 
                       value={accessKey}
-                      onChange={(e) => setAccessKey(e.target.value.replace(/\D/g, "").substring(0, 44))}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").substring(0, 44);
+                        setAccessKey(val);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleConsultKey();
+                      }}
                       className="h-12 text-lg font-mono tracking-wider bg-muted/20 rounded-xl"
                     />
                     <Button 
@@ -94,9 +144,16 @@ export default function ImportPage() {
                       Consultar
                     </Button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground px-1">
-                    {accessKey.length}/44 dígitos digitados
-                  </p>
+                  <div className="flex justify-between items-center px-1">
+                    <p className="text-[10px] text-muted-foreground">
+                      {accessKey.length}/44 dígitos digitados
+                    </p>
+                    {accessKey.length === 44 && !isConsulting && (
+                      <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Chave Completa
+                      </span>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -122,7 +179,7 @@ export default function ImportPage() {
                 </div>
                 <div className="flex gap-4">
                   <Button onClick={handleSimulateUpload} variant="outline" className="gap-2 rounded-xl">
-                    <Upload className="h-4 w-4" /> Selecionar Arquivo
+                    <Upload className="h-4 w-4" /> Selecionar XML/PDF
                   </Button>
                 </div>
               </CardContent>
@@ -161,12 +218,81 @@ export default function ImportPage() {
               <CardContent>
                 <p className="text-xs opacity-90 leading-relaxed">
                   Ao importar uma nota via chave ou arquivo, o sistema cruza os produtos automaticamente pelo EAN. 
-                  Itens não cadastrados serão sugeridos para criação imediata.
+                  Itens não cadastrados serão destacados para você decidir se deseja criá-los.
                 </p>
               </CardContent>
             </Card>
           </div>
         </div>
+
+        {/* Modal de Conferência de Produtos */}
+        <Dialog open={showProductsModal} onOpenChange={setShowProductsModal}>
+          <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-2xl">
+            <DialogHeader className="p-6 border-b bg-muted/20">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center text-white">
+                  <TableIcon className="h-6 w-6" />
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-headline font-bold text-primary">Conferência de Produtos</DialogTitle>
+                  <DialogDescription className="text-xs font-mono">NF-e: {accessKey.replace(/(.{4})/g, '$1 ')}</DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-y-auto p-0">
+              <Table>
+                <TableHeader className="bg-muted/50 sticky top-0 z-10">
+                  <TableRow>
+                    <TableHead className="pl-6 text-[10px] font-bold uppercase">Produto Identificado</TableHead>
+                    <TableHead className="text-center text-[10px] font-bold uppercase">Qtd</TableHead>
+                    <TableHead className="text-right text-[10px] font-bold uppercase">Preço Un.</TableHead>
+                    <TableHead className="text-right text-[10px] font-bold uppercase">Total Item</TableHead>
+                    <TableHead className="text-center text-[10px] font-bold uppercase">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {MOCK_INVOICE_PRODUCTS.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="pl-6">
+                        <p className="font-bold text-sm">{product.name}</p>
+                        <p className="text-[10px] text-muted-foreground">REF: {Math.random().toString(36).substring(7).toUpperCase()}</p>
+                      </TableCell>
+                      <TableCell className="text-center font-bold">{product.qty}</TableCell>
+                      <TableCell className="text-right font-medium">R$ {product.price.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-black text-primary">R$ {product.total.toFixed(2)}</TableCell>
+                      <TableCell className="text-center">
+                        {product.status === "exists" ? (
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[9px] uppercase font-bold">Cadastrado</Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[9px] uppercase font-bold">Novo Item</Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="p-6 border-t bg-muted/10 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground leading-none">Total da Nota</p>
+                  <p className="text-xl font-black text-primary">R$ 4.512,50</p>
+                </div>
+              </div>
+              <DialogFooter className="w-full md:w-auto flex gap-3">
+                <Button variant="ghost" onClick={() => setShowProductsModal(false)} className="rounded-xl px-6 h-11">
+                  Cancelar
+                </Button>
+                <Button onClick={handleFinalizeImport} className="bg-primary hover:bg-accent text-white font-bold rounded-xl px-8 h-11 gap-2 shadow-lg shadow-primary/20">
+                  Confirmar Importação <ArrowRight className="h-4 w-4" />
+                </Button>
+              </DialogFooter>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Card className="border-none shadow-sm">
           <CardHeader>
