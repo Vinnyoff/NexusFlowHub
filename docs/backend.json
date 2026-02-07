@@ -24,9 +24,13 @@
           "type": "string",
           "description": "Model of the product."
         },
+        "category": {
+          "type": "string",
+          "description": "Category of the product (e.g., Geral, Calças)."
+        },
         "size": {
           "type": "string",
-          "description": "Size of the product (e.g., P, M, G, GG)."
+          "description": "Size of the product (e.g., P, M, G, 38, 40)."
         },
         "price": {
           "type": "number",
