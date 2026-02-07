@@ -52,7 +52,6 @@ export default function ProductsPage() {
   ) || [];
 
   const calculateEAN8CheckDigit = (code: string) => {
-    // EAN-8 logic: weight 3, 1, 3, 1, 3, 1, 3
     let sum = 0;
     const weights = [3, 1, 3, 1, 3, 1, 3];
     for (let i = 0; i < 7; i++) {
@@ -63,13 +62,12 @@ export default function ProductsPage() {
   };
 
   const handleGenerateBarcode = () => {
-    // Gera base de 7 dígitos aleatórios para EAN-8 interno
     const base = `${Math.floor(1000000 + Math.random() * 9000000)}`;
     const checkDigit = calculateEAN8CheckDigit(base);
     const fullCode = base + checkDigit;
     
     setFormData({ ...formData, barcode: fullCode });
-    toast({ title: "Código Interno Gerado", description: `EAN-8 gerado: ${fullCode}` });
+    toast({ title: "Código Gerado", description: `EAN-8 interno: ${fullCode}` });
   };
 
   const handleEdit = (product: any) => {
@@ -93,21 +91,17 @@ export default function ProductsPage() {
       toast({ 
         variant: "destructive", 
         title: "Campos obrigatórios", 
-        description: "Por favor, preencha o nome e o preço do item." 
+        description: "Preencha o nome e preço do produto." 
       });
       return;
     }
 
     if (!isAdmin) {
-      toast({ 
-        variant: "destructive", 
-        title: "Acesso negado", 
-        description: "Apenas administradores podem gerenciar itens." 
-      });
+      toast({ variant: "destructive", title: "Erro", description: "Apenas administradores podem gerenciar estoque." });
       return;
     }
 
-    // Se não houver código de barras, gera um EAN-8 automático
+    // Geração automática se o campo estiver vazio
     let finalBarcode = formData.barcode;
     if (!finalBarcode) {
       const base = `${Math.floor(1000000 + Math.random() * 9000000)}`;
@@ -128,17 +122,14 @@ export default function ProductsPage() {
     if (editingId) {
       const docRef = doc(firestore, "products", editingId);
       updateDocumentNonBlocking(docRef, productData);
-      toast({ 
-        title: "Item Atualizado", 
-        description: `${productData.name} foi atualizado com sucesso.` 
-      });
+      toast({ title: "Sucesso", description: "Produto atualizado." });
     } else {
       const productId = crypto.randomUUID();
       const docRef = doc(firestore, "products", productId);
       setDocumentNonBlocking(docRef, { ...productData, id: productId }, { merge: true });
       toast({ 
-        title: "Item Registrado", 
-        description: `${productData.name} foi adicionado ao inventário com código ${finalBarcode}.` 
+        title: "Sucesso", 
+        description: `Produto cadastrado com código interno ${finalBarcode}.` 
       });
     }
     
@@ -164,32 +155,16 @@ export default function ProductsPage() {
     if (!isAdmin || !firestore) return;
     const docRef = doc(firestore, "products", id);
     deleteDocumentNonBlocking(docRef);
-    toast({ title: "Removido", description: "Item excluído do inventário." });
+    toast({ title: "Removido", description: "Item excluído." });
   };
-
-  if (!isAdmin) {
-    return (
-      <AppLayout>
-        <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
-          <div className="bg-destructive/10 p-4 rounded-full">
-            <Package className="h-12 w-12 text-destructive opacity-50" />
-          </div>
-          <h1 className="text-2xl font-headline font-bold">Acesso Restrito</h1>
-          <p className="text-muted-foreground text-center max-w-md">
-            Apenas administradores podem gerenciar o inventário.
-          </p>
-        </div>
-      </AppLayout>
-    );
-  }
 
   return (
     <AppLayout>
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-headline font-bold text-primary">Inventário de Produtos</h1>
-            <p className="text-muted-foreground">Controle central de mercadorias e insumos.</p>
+            <h1 className="text-3xl font-headline font-bold text-primary">Gestão de Estoque</h1>
+            <p className="text-muted-foreground">Administre seus produtos e gere códigos internos automaticamente.</p>
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -197,147 +172,148 @@ export default function ProductsPage() {
             if (!open) resetForm();
           }}>
             <DialogTrigger asChild>
-              <Button onClick={() => resetForm()} className="bg-primary hover:bg-accent text-white gap-2">
-                <Plus className="h-4 w-4" />
-                Novo Item
+              <Button onClick={() => resetForm()} className="bg-primary hover:bg-accent text-white gap-2 h-11 px-6 rounded-xl shadow-lg shadow-primary/20">
+                <Plus className="h-5 w-5" />
+                Cadastrar Produto
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[520px]">
+            <DialogContent className="sm:max-w-[520px] rounded-2xl">
               <DialogHeader>
-                <DialogTitle className="font-headline text-xl">
-                  {editingId ? "Editar Item" : "Cadastrar Novo Item"}
+                <DialogTitle className="font-headline text-2xl text-primary">
+                  {editingId ? "Editar Produto" : "Novo Cadastro"}
                 </DialogTitle>
               </DialogHeader>
               
               <Tabs defaultValue="principal" value={activeTab} onValueChange={setActiveTab} className="w-full mt-2">
-                <TabsList className="grid w-full grid-cols-2 h-10 bg-muted/50 p-1">
-                  <TabsTrigger value="principal" className="rounded-md font-bold text-[10px] uppercase tracking-wider">
-                    <Layers className="h-3 w-3 mr-2" /> Identificação
+                <TabsList className="grid w-full grid-cols-2 h-12 bg-muted/50 p-1.5 rounded-xl">
+                  <TabsTrigger value="principal" className="rounded-lg font-bold text-[11px] uppercase tracking-wider">
+                    <Layers className="h-4 w-4 mr-2" /> Identificação
                   </TabsTrigger>
-                  <TabsTrigger value="detalhes" className="rounded-md font-bold text-[10px] uppercase tracking-wider">
-                    <Package className="h-3 w-3 mr-2" /> Especificações
+                  <TabsTrigger value="detalhes" className="rounded-lg font-bold text-[11px] uppercase tracking-wider">
+                    <Package className="h-4 w-4 mr-2" /> Dados Fiscais/EAN
                   </TabsTrigger>
                 </TabsList>
 
-                <div className="grid grid-cols-2 gap-4 py-6">
-                  <div className="space-y-1.5 col-span-2">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Nome do Produto</Label>
+                <div className="grid grid-cols-2 gap-5 py-6">
+                  <div className="space-y-2 col-span-2">
+                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Nome do Item</Label>
                     <Input 
-                      placeholder="Ex: Teclado Mecânico" 
+                      placeholder="Ex: Camiseta de Algodão Premium" 
                       value={formData.name}
                       onChange={e => setFormData({...formData, name: e.target.value})}
-                      className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
+                      className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
                     />
                   </div>
                   
-                  <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Fabricante/Marca</Label>
-                    <Input 
-                      placeholder="Ex: Dell" 
-                      value={formData.brand}
-                      onChange={e => setFormData({...formData, brand: e.target.value})}
-                      className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Categoria</Label>
-                    <Input 
-                      placeholder="Ex: Eletrônicos" 
-                      value={formData.category}
-                      onChange={e => setFormData({...formData, category: e.target.value})}
-                      className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
-                    />
-                  </div>
-
-                  <TabsContent value="principal" className="col-span-2 m-0 grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Preço (R$)</Label>
+                  <TabsContent value="principal" className="col-span-2 m-0 grid grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Fabricante</Label>
+                      <Input 
+                        placeholder="Ex: Nike" 
+                        value={formData.brand}
+                        onChange={e => setFormData({...formData, brand: e.target.value})}
+                        className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Categoria</Label>
+                      <Input 
+                        placeholder="Ex: Vestuário" 
+                        value={formData.category}
+                        onChange={e => setFormData({...formData, category: e.target.value})}
+                        className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Preço Venda (R$)</Label>
                       <Input 
                         type="number" 
                         step="0.01" 
                         placeholder="0,00" 
                         value={formData.price}
                         onChange={e => setFormData({...formData, price: e.target.value})}
-                        className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
+                        className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20 font-bold text-primary"
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Quantidade</Label>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Qtd em Estoque</Label>
                       <Input 
                         type="number" 
                         placeholder="0" 
                         value={formData.stock}
                         onChange={e => setFormData({...formData, stock: e.target.value})}
-                        className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
+                        className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
                       />
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="detalhes" className="col-span-2 m-0 grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5 col-span-2">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Código de Barras (EAN-8 Interno)</Label>
+                  <TabsContent value="detalhes" className="col-span-2 m-0 grid grid-cols-2 gap-5">
+                    <div className="space-y-2 col-span-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Leitura / Código EAN-8 Interno</Label>
                       <div className="flex gap-2">
                         <div className="relative flex-1">
-                          <BarcodeIcon className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                          <BarcodeIcon className="absolute left-4 top-3.5 h-5 w-5 text-primary opacity-50" />
                           <Input 
-                            placeholder="Aguardando leitura ou digitação..." 
+                            placeholder="Escaneie ou deixe em branco para gerar..." 
                             value={formData.barcode}
                             onChange={e => setFormData({...formData, barcode: e.target.value})}
-                            className="rounded-xl border-primary/10 h-11 pl-10 text-sm bg-muted/20"
+                            className="rounded-xl border-primary/10 h-12 pl-12 text-sm bg-muted/20 font-mono"
                             maxLength={8}
                           />
                         </div>
                         <Button 
                           type="button" 
                           variant="outline" 
-                          className="h-11 rounded-xl border-dashed gap-2 text-xs"
+                          className="h-12 rounded-xl border-dashed gap-2 text-xs border-primary/30 hover:bg-primary/5"
                           onClick={handleGenerateBarcode}
                         >
                           <Sparkles className="h-4 w-4 text-primary" />
-                          Gerar EAN-8
+                          Gerar Novo
                         </Button>
                       </div>
+                      <p className="text-[9px] text-muted-foreground italic pl-1">
+                        * Se vazio, o sistema gera um código de 8 dígitos para etiquetas internas.
+                      </p>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Modelo / SKU</Label>
                       <Input 
-                        placeholder="Ex: K780-Wireless" 
+                        placeholder="Ex: MOD-2024" 
                         value={formData.model}
                         onChange={e => setFormData({...formData, model: e.target.value})}
-                        className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
+                        className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Variante</Label>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest pl-1">Variante / Tamanho</Label>
                       <Input 
-                        placeholder="Ex: Preto" 
+                        placeholder="Ex: GG" 
                         value={formData.variant}
                         onChange={e => setFormData({...formData, variant: e.target.value})}
-                        className="rounded-xl border-primary/10 h-11 text-sm bg-muted/20"
+                        className="rounded-xl border-primary/10 h-12 text-sm bg-muted/20"
                       />
                     </div>
                   </TabsContent>
                 </div>
               </Tabs>
 
-              <DialogFooter className="border-t pt-4">
-                <Button type="button" variant="ghost" size="sm" onClick={() => setIsDialogOpen(false)} className="rounded-xl">Cancelar</Button>
-                <Button type="button" size="sm" onClick={handleSaveProduct} className="rounded-xl px-6 shadow-lg shadow-primary/20">
-                  {editingId ? "Atualizar" : "Salvar Item"}
+              <DialogFooter className="border-t border-border/50 pt-5 mt-2">
+                <Button type="button" variant="ghost" className="rounded-xl h-11 px-6" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+                <Button type="button" className="rounded-xl h-11 px-8 bg-primary hover:bg-accent shadow-lg shadow-primary/20 font-bold" onClick={handleSaveProduct}>
+                  {editingId ? "Salvar Alterações" : "Concluir Cadastro"}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
 
-        <Card className="border-none shadow-sm">
-          <CardHeader className="pb-3 border-b border-border/50">
+        <Card className="border-none shadow-prominent overflow-hidden rounded-2xl bg-card">
+          <CardHeader className="pb-4 border-b border-border/50 bg-muted/10">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
               <Input 
-                placeholder="Buscar por nome, categoria, código ou fabricante..." 
-                className="pl-10 rounded-xl border-none bg-muted/30 focus-visible:ring-primary/20"
+                placeholder="Filtrar por nome, código, marca ou categoria..." 
+                className="pl-12 h-12 rounded-xl border-none bg-muted/20 focus-visible:ring-primary/20 text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -345,60 +321,68 @@ export default function ProductsPage() {
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
-              <div className="flex justify-center py-20">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="flex flex-col items-center justify-center py-24 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-sm font-medium text-muted-foreground">Sincronizando inventário...</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="pl-6">Descrição do Item</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>Identificação</TableHead>
-                    <TableHead>Variante</TableHead>
-                    <TableHead>Preço</TableHead>
-                    <TableHead>Estoque</TableHead>
-                    <TableHead className="text-right pr-6">Ações</TableHead>
+                  <TableRow className="hover:bg-transparent border-b border-border/50">
+                    <TableHead className="pl-6 h-14 text-[11px] uppercase tracking-widest font-bold">Produto</TableHead>
+                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Identificação</TableHead>
+                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Categoria</TableHead>
+                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold text-center">Variante</TableHead>
+                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Preço</TableHead>
+                    <TableHead className="h-14 text-[11px] uppercase tracking-widest font-bold">Estoque</TableHead>
+                    <TableHead className="text-right pr-6 h-14 text-[11px] uppercase tracking-widest font-bold">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.map((product) => (
-                    <TableRow key={product.id} className="group hover:bg-muted/50 transition-colors">
-                      <TableCell className="pl-6 font-semibold text-primary">
-                        {product.name}
-                        <div className="text-[10px] text-muted-foreground font-mono mt-1">EAN-8: {product.barcode}</div>
+                    <TableRow key={product.id} className="group hover:bg-primary/[0.02] transition-colors border-b border-border/30">
+                      <TableCell className="pl-6 py-4">
+                        <div className="font-bold text-foreground text-sm">{product.name}</div>
+                        <div className="text-[10px] text-primary font-mono bg-primary/5 px-2 py-0.5 rounded inline-block mt-1">EAN-8: {product.barcode}</div>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="rounded-md font-bold text-[10px] uppercase">{product.category || "Geral"}</Badge>
+                      <TableCell className="py-4">
+                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight">{product.brand}</div>
+                        <div className="text-xs font-medium text-foreground/80">{product.model || '-'}</div>
                       </TableCell>
-                      <TableCell>
-                        <div className="text-[10px] text-muted-foreground font-bold uppercase">{product.brand}</div>
-                        <div className="text-sm">{product.model}</div>
+                      <TableCell className="py-4">
+                        <Badge variant="secondary" className="rounded-md font-bold text-[10px] px-2 py-0 uppercase bg-muted text-muted-foreground border-none">
+                          {product.category || "Geral"}
+                        </Badge>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="font-bold min-w-[30px] justify-center">{product.size}</Badge>
+                      <TableCell className="py-4 text-center">
+                        <span className="text-xs font-black bg-muted/50 px-2 py-1 rounded border">{product.size}</span>
                       </TableCell>
-                      <TableCell className="font-bold">R$ {product.price?.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <span className={`font-bold ${product.quantity < 5 ? "text-destructive" : "text-emerald-600"}`}>
-                          {product.quantity} un
-                        </span>
+                      <TableCell className="py-4 font-black text-foreground">
+                        R$ {product.price?.toFixed(2)}
                       </TableCell>
-                      <TableCell className="text-right pr-6">
+                      <TableCell className="py-4">
+                        <div className={`inline-flex items-center gap-1.5 font-black text-sm ${product.quantity < 5 ? "text-destructive" : "text-emerald-600"}`}>
+                          <div className={`h-1.5 w-1.5 rounded-full ${product.quantity < 5 ? "bg-destructive animate-pulse" : "bg-emerald-600"}`} />
+                          {product.quantity} <span className="text-[10px] font-bold text-muted-foreground uppercase">un</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right pr-6 py-4">
                         <div className="flex justify-end gap-1">
                           <Button 
                             size="icon" 
                             variant="ghost" 
-                            className="h-8 w-8 text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="h-9 w-9 text-primary hover:bg-primary/10 rounded-lg transition-all"
                             onClick={() => handleEdit(product)}
+                            title="Editar"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button 
                             size="icon" 
                             variant="ghost" 
-                            className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="h-9 w-9 text-destructive hover:bg-destructive/10 rounded-lg transition-all"
                             onClick={() => handleDelete(product.id)}
+                            title="Excluir"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -408,8 +392,11 @@ export default function ProductsPage() {
                   ))}
                   {filteredProducts.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-20 text-muted-foreground">
-                        Nenhum item encontrado no inventário.
+                      <TableCell colSpan={7} className="text-center py-32">
+                        <div className="flex flex-col items-center gap-3 opacity-30">
+                          <Package className="h-16 w-16" />
+                          <p className="text-sm font-bold uppercase tracking-widest">Nenhum item localizado</p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   )}
