@@ -49,8 +49,24 @@ function ThemeToggle() {
 function AppSidebar() {
   const pathname = usePathname();
   const { role, logout } = useAuth();
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
   const isAdmin = role === "ADM";
+
+  // Sincroniza a seção aberta com o caminho atual no carregamento inicial
+  useEffect(() => {
+    if (pathname.startsWith("/finance")) {
+      setOpenSection("finance");
+    } else if (pathname === "/suppliers") {
+      setOpenSection("cadastro");
+    } else if (pathname.startsWith("/products") || pathname === "/import" || pathname === "/labels") {
+      setOpenSection("estoque");
+    }
+  }, [pathname]);
+
+  const handleOpenChange = (section: string, isOpen: boolean) => {
+    setOpenSection(isOpen ? section : null);
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border bg-card shadow-xl transition-all duration-300">
@@ -83,7 +99,12 @@ function AppSidebar() {
 
           {/* Módulo Financeiro */}
           {isAdmin && (
-            <Collapsible asChild defaultOpen={pathname.startsWith("/finance")} className="group/collapsible">
+            <Collapsible 
+              asChild 
+              open={openSection === "finance"} 
+              onOpenChange={(open) => handleOpenChange("finance", open)}
+              className="group/collapsible"
+            >
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton tooltip="Financeiro" className="w-full">
@@ -124,9 +145,14 @@ function AppSidebar() {
             </Collapsible>
           )}
 
-          {/* Módulo de Cadastro com Submódulos */}
+          {/* Módulo de Cadastro */}
           {isAdmin && (
-            <Collapsible asChild defaultOpen={pathname === "/suppliers"} className="group/collapsible">
+            <Collapsible 
+              asChild 
+              open={openSection === "cadastro"} 
+              onOpenChange={(open) => handleOpenChange("cadastro", open)}
+              className="group/collapsible"
+            >
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton tooltip="Cadastro" className="w-full">
@@ -148,9 +174,14 @@ function AppSidebar() {
             </Collapsible>
           )}
 
-          {/* Módulo de Estoque com Submódulos */}
+          {/* Módulo de Estoque */}
           {isAdmin && (
-            <Collapsible asChild defaultOpen={pathname.startsWith("/products") || pathname === "/import" || pathname === "/labels"} className="group/collapsible">
+            <Collapsible 
+              asChild 
+              open={openSection === "estoque"} 
+              onOpenChange={(open) => handleOpenChange("estoque", open)}
+              className="group/collapsible"
+            >
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton tooltip="Estoque" className="w-full">
