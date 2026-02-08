@@ -116,26 +116,26 @@ function AppSidebar() {
                 <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down">
                   <SidebarMenuSub className="transition-all duration-300">
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/finance/payable"} className="transition-all duration-200">
+                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === "/finance/payable"} className="transition-all duration-200">
                         <a href="/finance/payable" className="flex items-center gap-2">
-                          <ArrowDownCircle className="h-4 w-4 text-destructive" />
-                          Contas a Pagar
+                          <ArrowDownCircle className="h-3.5 w-3.5 text-destructive" />
+                          <span className="text-[11px]">Contas a Pagar</span>
                         </a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/finance/receivable"} className="transition-all duration-200">
+                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === "/finance/receivable"} className="transition-all duration-200">
                         <a href="/finance/receivable" className="flex items-center gap-2">
-                          <ArrowUpCircle className="h-4 w-4 text-emerald-500" />
-                          Contas a Receber
+                          <ArrowUpCircle className="h-3.5 w-3.5 text-emerald-500" />
+                          <span className="text-[11px]">Contas a Receber</span>
                         </a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/finance/transactions"} className="transition-all duration-200">
+                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === "/finance/transactions"} className="transition-all duration-200">
                         <a href="/finance/transactions" className="flex items-center gap-2">
-                          <HistoryIcon className="h-4 w-4" />
-                          Movimentação
+                          <HistoryIcon className="h-3.5 w-3.5" />
+                          <span className="text-[11px]">Movimentação</span>
                         </a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -164,10 +164,10 @@ function AppSidebar() {
                 <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down">
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/suppliers"} className="transition-all duration-200">
+                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === "/suppliers"} className="transition-all duration-200">
                         <a href="/suppliers" className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4" />
-                          Fornecedores
+                          <Building2 className="h-3.5 w-3.5" />
+                          <span className="text-[11px]">Fornecedores</span>
                         </a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -196,26 +196,26 @@ function AppSidebar() {
                 <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down">
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/products"} className="transition-all duration-200">
+                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === "/products"} className="transition-all duration-200">
                         <a href="/products" className="flex items-center gap-2">
-                          <Box className="h-4 w-4" />
-                          Central de estoque
+                          <Box className="h-3.5 w-3.5" />
+                          <span className="text-[11px]">Central de estoque</span>
                         </a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/import"} className="transition-all duration-200">
+                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === "/import"} className="transition-all duration-200">
                         <a href="/import" className="flex items-center gap-2">
-                          <FileUp className="h-4 w-4" />
-                          Importação de Notas
+                          <FileUp className="h-3.5 w-3.5" />
+                          <span className="text-[11px]">Importação</span>
                         </a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/labels"} className="transition-all duration-200">
+                      <SidebarMenuSubButton asChild size="sm" isActive={pathname === "/labels"} className="transition-all duration-200">
                         <a href="/labels" className="flex items-center gap-2">
-                          <Tag className="h-4 w-4" />
-                          Emissão de Etiquetas
+                          <Tag className="h-3.5 w-3.5" />
+                          <span className="text-[11px]">Etiquetas</span>
                         </a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
