@@ -7,23 +7,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar as CalendarIcon, Filter, Eye, Download, Loader2, Package, Trash2, AlertTriangle, CalendarDays, ChevronDown, ChevronUp, PlusCircle, CreditCard, Banknote, QrCode, ListFilter, CalendarClock } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Filter, Eye, Download, Loader2, Package, CalendarDays, ChevronDown, ChevronUp, CreditCard, Banknote, QrCode, CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, where, writeBatch, doc } from "firebase/firestore";
-import { useAuth } from "@/app/lib/auth-store";
-import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { collection, query, where } from "firebase/firestore";
 import {
   Select,
   SelectContent,
@@ -40,13 +27,10 @@ export default function SalesHistory() {
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("ALL");
-  const [isDeleting, setIsDeleting] = useState(false);
   const [expandedSales, setExpandedSales] = useState<Set<string>>(new Set());
   
   const firestore = useFirestore();
   const { user } = useUser();
-  const { isAdmin } = useAuth();
-  const { toast } = useToast();
 
   const salesQuery = useMemoFirebase(() => {
     if (!firestore || !user || !selectedDate) return null;
@@ -72,32 +56,6 @@ export default function SalesHistory() {
     
     return matchesSearch && matchesPayment;
   });
-
-  const handleDeleteDaySales = async () => {
-    if (!firestore || !user || combinedSales.length === 0) return;
-    setIsDeleting(true);
-    const batch = writeBatch(firestore);
-    try {
-      combinedSales.forEach((sale) => {
-        const saleRef = doc(firestore, "users", user.uid, "sales", sale.id);
-        batch.delete(saleRef);
-      });
-      await batch.commit();
-      toast({
-        title: "Histórico Excluído",
-        description: `Todas as vendas do dia ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR')} foram removidas.`,
-      });
-    } catch (error) {
-      console.error("Erro ao excluir histórico:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao excluir",
-        description: "Não foi possível remover os registros selecionados.",
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
 
   const toggleSaleExpansion = (id: string) => {
     const newExpanded = new Set(expandedSales);
@@ -127,32 +85,6 @@ export default function SalesHistory() {
             <p className="text-muted-foreground">Vendas registradas em <span className="font-bold text-foreground">{formattedSelectedDate}</span></p>
           </div>
           <div className="flex gap-2">
-            {isAdmin && combinedSales.length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="gap-2 rounded-xl h-11" disabled={isDeleting}>
-                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                    Limpar registros do dia
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="rounded-2xl">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-                      <AlertTriangle className="h-5 w-5" /> Atenção: Ação Irreversível
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Você está prestes a excluir **todas as {combinedSales.length} vendas** registradas em {formattedSelectedDate}. Esta ação não pode ser desfeita.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteDaySales} className="bg-destructive hover:bg-destructive/90 rounded-xl">
-                      Confirmar Exclusão
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
             <Button variant="outline" className="gap-2 rounded-xl h-11">
               <Download className="h-4 w-4" /> Exportar
             </Button>
