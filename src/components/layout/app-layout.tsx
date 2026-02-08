@@ -55,12 +55,18 @@ function AppSidebar() {
 
   const isAdmin = role === "ADM";
 
-  // Gerenciamento inteligente do estado dos subgrupos baseado na expansão da sidebar
+  // Fecha as seções automaticamente quando a sidebar é colapsada
   useEffect(() => {
     if (state === "collapsed") {
       setOpenSection(null);
-    } else if (state === "expanded") {
-      // Re-avalia qual seção deve estar aberta ao expandir
+    }
+  }, [state]);
+
+  // Abre a seção correspondente apenas quando houver mudança real de página (pathname)
+  // e se a sidebar estiver expandida. Isso garante que ao simplesmente expandir
+  // a barra novamente, as seções continuem fechadas conforme solicitado.
+  useEffect(() => {
+    if (state === "expanded") {
       if (pathname.startsWith("/finance")) {
         setOpenSection("finance");
       } else if (pathname === "/suppliers") {
@@ -69,7 +75,7 @@ function AppSidebar() {
         setOpenSection("estoque");
       }
     }
-  }, [state, pathname]);
+  }, [pathname]); // Removemos 'state' das dependências
 
   const handleOpenChange = (section: string, isOpen: boolean) => {
     setOpenSection(isOpen ? section : null);
