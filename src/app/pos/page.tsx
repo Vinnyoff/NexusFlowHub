@@ -141,22 +141,23 @@ export default function POSPage() {
       const batch = writeBatch(firestore);
       batch.set(saleDocRef, saleData);
 
-      // Se for venda a prazo, gerar título no contas a receber
-      if (paymentMethod === "DEFERRED") {
-        const transactionId = crypto.randomUUID();
-        const transactionRef = doc(firestore, "financialTransactions", transactionId);
-        batch.set(transactionRef, {
-          id: transactionId,
-          type: "RECEIVABLE",
-          description: `Venda # ${saleId.substring(0, 8)}`,
-          amount: Number(total.toFixed(2)),
-          dueDate: new Date().toISOString().split('T')[0], // Hoje como previsão inicial
-          status: "PENDING",
-          category: "Venda a Prazo",
-          entityName: "Cliente Balcão",
-          createdAt: new Date().toISOString()
-        });
-      }
+      // Registrar movimentação financeira para TODA venda
+      const transactionId = crypto.randomUUID();
+      const transactionRef = doc(firestore, "financialTransactions", transactionId);
+      const isPaid = paymentMethod !== "DEFERRED";
+      
+      batch.set(transactionRef, {
+        id: transactionId,
+        type: "RECEIVABLE",
+        description: `Venda # ${saleId.substring(0, 8)}`,
+        amount: Number(total.toFixed(2)),
+        dueDate: now.toISOString().split('T')[0],
+        status: isPaid ? "PAID" : "PENDING",
+        category: paymentMethod === "DEFERRED" ? "Venda a Prazo" : "Venda PDV",
+        entityName: "Cliente Balcão",
+        paymentDate: isPaid ? now.toISOString() : null,
+        createdAt: now.toISOString()
+      });
 
       // Baixa de estoque e registro de itens individuais
       cart.forEach(item => {
@@ -184,7 +185,7 @@ export default function POSPage() {
       setAmountReceived("");
       toast({ 
         title: "Venda Finalizada", 
-        description: `Total de R$ ${total.toFixed(2)} registrado.${paymentMethod === "DEFERRED" ? " Título gerado no Contas a Receber." : ""}` 
+        description: `Total de R$ ${total.toFixed(2)} registrado.${paymentMethod === "DEFERRED" ? " Título gerado no Contas a Receber." : " Movimentação registrada."}` 
       });
     } catch (error: any) {
       console.error("Erro ao finalizar venda:", error);

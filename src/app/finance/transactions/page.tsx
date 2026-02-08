@@ -4,7 +4,7 @@
 import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { History, TrendingUp, TrendingDown, Landmark, ArrowUpCircle, ArrowDownCircle, Loader2 } from "lucide-react";
+import { History, TrendingUp, TrendingDown, Landmark, ArrowUpCircle, ArrowDownCircle, Loader2, CheckCircle2, Clock } from "lucide-react";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +19,10 @@ export default function FinancialTransactions() {
 
   const { data: transactions, isLoading } = useCollection(transactionsQuery);
 
-  const totalPayable = transactions?.filter(t => t.type === 'PAYABLE' && t.status === 'PAID').reduce((acc, t) => acc + t.amount, 0) || 0;
-  const totalReceivable = transactions?.filter(t => t.type === 'RECEIVABLE' && t.status === 'PAID').reduce((acc, t) => acc + t.amount, 0) || 0;
-  const balance = totalReceivable - totalPayable;
+  // Consideramos apenas transações PAGAS/RECEBIDAS para o saldo líquido
+  const totalPaidOut = transactions?.filter(t => t.type === 'PAYABLE' && t.status === 'PAID').reduce((acc, t) => acc + t.amount, 0) || 0;
+  const totalReceivedIn = transactions?.filter(t => t.type === 'RECEIVABLE' && t.status === 'PAID').reduce((acc, t) => acc + t.amount, 0) || 0;
+  const balance = totalReceivedIn - totalPaidOut;
 
   return (
     <AppLayout>
@@ -30,20 +31,20 @@ export default function FinancialTransactions() {
           <h1 className="text-3xl font-headline font-bold text-primary flex items-center gap-2">
             <History className="h-8 w-8" /> Movimentação Financeira
           </h1>
-          <p className="text-muted-foreground">Fluxo de caixa consolidado e histórico de transações pagas.</p>
+          <p className="text-muted-foreground">Fluxo de caixa consolidado e histórico detalhado de todas as operações.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatCard 
             title="Total Recebido" 
-            value={`R$ ${totalReceivable.toFixed(2)}`} 
+            value={`R$ ${totalReceivedIn.toFixed(2)}`} 
             icon={ArrowUpCircle} 
             color="text-emerald-500" 
             bgColor="bg-emerald-50"
           />
           <StatCard 
             title="Total Pago" 
-            value={`R$ ${totalPayable.toFixed(2)}`} 
+            value={`R$ ${totalPaidOut.toFixed(2)}`} 
             icon={ArrowDownCircle} 
             color="text-destructive" 
             bgColor="bg-red-50"
@@ -59,7 +60,7 @@ export default function FinancialTransactions() {
 
         <Card className="border-none shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="bg-muted/10 border-b">
-            <CardTitle className="text-lg font-headline">Histórico Consolidado</CardTitle>
+            <CardTitle className="text-lg font-headline">Histórico Consolidado de Operações</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
@@ -70,35 +71,58 @@ export default function FinancialTransactions() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Data Op.</TableHead>
+                    <TableHead className="pl-6">Data</TableHead>
                     <TableHead>Descrição</TableHead>
-                    <TableHead>Favorecido/Cliente</TableHead>
+                    <TableHead>Entidade/Categoria</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Valor</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right pr-6">Valor</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {transactions?.map((t) => (
-                    <TableRow key={t.id} className={t.status !== 'PAID' ? "opacity-50" : ""}>
-                      <TableCell className="text-xs">
+                    <TableRow key={t.id} className={t.status !== 'PAID' ? "opacity-60 bg-muted/5" : "hover:bg-muted/10 transition-colors"}>
+                      <TableCell className="pl-6 text-xs font-medium">
                         {new Date(t.createdAt || t.paymentDate || t.dueDate).toLocaleDateString()}
+                        <div className="text-[10px] text-muted-foreground">
+                           {new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       </TableCell>
-                      <TableCell className="font-medium">{t.description}</TableCell>
-                      <TableCell>{t.entityName || "---"}</TableCell>
+                      <TableCell>
+                        <div className="font-semibold text-sm">{t.description}</div>
+                        {t.category && <span className="text-[10px] uppercase font-bold text-muted-foreground">{t.category}</span>}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {t.entityName || "---"}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={t.type === 'RECEIVABLE' ? 'text-emerald-500 border-emerald-500' : 'text-destructive border-destructive'}>
                           {t.type === 'RECEIVABLE' ? 'Entrada' : 'Saída'}
                         </Badge>
                       </TableCell>
-                      <TableCell className={`font-bold ${t.type === 'RECEIVABLE' ? 'text-emerald-600' : 'text-destructive'}`}>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          {t.status === 'PAID' ? (
+                            <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold uppercase">
+                              <CheckCircle2 className="h-3 w-3" /> Efetivado
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-[10px] text-amber-600 font-bold uppercase">
+                              <Clock className="h-3 w-3" /> Pendente
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className={`text-right pr-6 font-black text-base ${t.type === 'RECEIVABLE' ? 'text-emerald-600' : 'text-destructive'}`}>
                         {t.type === 'RECEIVABLE' ? '+' : '-'} R$ {t.amount.toFixed(2)}
                       </TableCell>
                     </TableRow>
                   ))}
                   {transactions?.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-20 text-muted-foreground opacity-30">
-                        Nenhuma movimentação registrada.
+                      <TableCell colSpan={6} className="text-center py-20 text-muted-foreground opacity-30">
+                        <History className="h-12 w-12 mx-auto mb-2" />
+                        Nenhuma movimentação financeira registrada até o momento.
                       </TableCell>
                     </TableRow>
                   )}
@@ -114,7 +138,7 @@ export default function FinancialTransactions() {
 
 function StatCard({ title, value, icon: Icon, color, bgColor }: any) {
   return (
-    <Card className="border-none shadow-sm">
+    <Card className="border-none shadow-sm transition-transform hover:scale-[1.02]">
       <CardContent className="p-6 flex items-center gap-4">
         <div className={`${bgColor} ${color} p-3 rounded-xl`}>
           <Icon className="h-8 w-8" />
