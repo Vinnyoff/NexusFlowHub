@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, ArrowDownCircle, Loader2, Calendar, CheckCircle, Trash2, Filter } from "lucide-react";
+import { Plus, Search, ArrowDownCircle, Loader2, Calendar, CheckCircle, Trash2, Filter, Landmark, ReceiptText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, doc } from "firebase/firestore";
@@ -26,7 +26,7 @@ export default function AccountsPayable() {
     amount: "",
     dueDate: "",
     entityName: "",
-    category: "Despesa"
+    category: "Mensalidade"
   });
 
   const firestore = useFirestore();
@@ -62,7 +62,7 @@ export default function AccountsPayable() {
 
     toast({ title: "Conta registrada", description: "O compromisso foi adicionado com sucesso." });
     setIsDialogOpen(false);
-    setFormData({ description: "", amount: "", dueDate: "", entityName: "", category: "Despesa" });
+    setFormData({ description: "", amount: "", dueDate: "", entityName: "", category: "Mensalidade" });
   };
 
   const markAsPaid = (id: string) => {
@@ -88,7 +88,7 @@ export default function AccountsPayable() {
             <h1 className="text-3xl font-headline font-bold text-destructive flex items-center gap-2">
               <ArrowDownCircle className="h-8 w-8" /> Contas a Pagar
             </h1>
-            <p className="text-muted-foreground">Gestão de obrigações, despesas e fornecedores.</p>
+            <p className="text-muted-foreground">Gestão de obrigações, despesas fixas e fornecedores.</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -104,15 +104,30 @@ export default function AccountsPayable() {
                 <div className="space-y-2">
                   <Label>Descrição / Título</Label>
                   <Input 
-                    placeholder="Ex: Aluguel Mensal" 
+                    placeholder="Ex: Aluguel Mensal ou Conta de Luz" 
                     value={formData.description}
                     onChange={e => setFormData({...formData, description: e.target.value})}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Fornecedor (Opcional)</Label>
+                  <Label>Categoria da Despesa</Label>
+                  <Select value={formData.category} onValueChange={v => setFormData({...formData, category: v})}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Mensalidade">Mensalidade Fixa</SelectItem>
+                      <SelectItem value="Utilidades">Utilidades (Água/Luz/Net)</SelectItem>
+                      <SelectItem value="Mercadoria">Compra de Mercadoria</SelectItem>
+                      <SelectItem value="Impostos">Impostos / Taxas</SelectItem>
+                      <SelectItem value="Outros">Outros</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Favorecido / Fornecedor (Opcional)</Label>
                   <Input 
-                    placeholder="Nome do favorecido" 
+                    placeholder="Nome da pessoa ou empresa" 
                     value={formData.entityName}
                     onChange={e => setFormData({...formData, entityName: e.target.value})}
                   />
@@ -148,7 +163,7 @@ export default function AccountsPayable() {
           <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar por descrição ou fornecedor..." 
+              placeholder="Buscar por descrição ou favorecido..." 
               className="pl-10 h-11 rounded-xl"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
@@ -178,7 +193,8 @@ export default function AccountsPayable() {
                 <TableHeader className="bg-muted/30">
                   <TableRow>
                     <TableHead>Descrição</TableHead>
-                    <TableHead>Fornecedor</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Favorecido</TableHead>
                     <TableHead>Vencimento</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Status</TableHead>
@@ -188,7 +204,19 @@ export default function AccountsPayable() {
                 <TableBody>
                   {filtered.map((t) => (
                     <TableRow key={t.id}>
-                      <TableCell className="font-medium">{t.description}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex flex-col">
+                          <span>{t.description}</span>
+                          {t.description.includes("NF") && (
+                            <span className="text-[10px] text-muted-foreground font-mono">NF Automática</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-muted/50 text-[10px] uppercase font-bold">
+                          {t.category || "Geral"}
+                        </Badge>
+                      </TableCell>
                       <TableCell>{t.entityName || "---"}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5 text-xs">
@@ -218,7 +246,7 @@ export default function AccountsPayable() {
                   ))}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-20 text-muted-foreground opacity-30">
+                      <TableCell colSpan={7} className="text-center py-20 text-muted-foreground opacity-30">
                         <Landmark className="h-12 w-12 mx-auto mb-2" />
                         Nenhuma conta registrada.
                       </TableCell>

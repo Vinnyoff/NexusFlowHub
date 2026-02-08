@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AppLayout } from "@/components/layout/app-layout";
@@ -298,6 +299,21 @@ export default function ImportPage() {
         });
       }
 
+      // Gerar Contas a Pagar automaticamente
+      const transactionId = crypto.randomUUID();
+      const transactionRef = doc(firestore, "financialTransactions", transactionId);
+      batch.set(transactionRef, {
+        id: transactionId,
+        type: "PAYABLE",
+        description: `Compra de Mercadoria - NF ${accessKey.substring(accessKey.length - 9)}`,
+        amount: Number(totalInvoice.toFixed(2)),
+        dueDate: new Date().toISOString().split('T')[0], // Hoje como vencimento inicial
+        status: "PENDING",
+        category: "Mercadoria",
+        entityName: invoiceSupplier?.name || "Fornecedor da Nota",
+        createdAt: new Date().toISOString()
+      });
+
       invoiceProducts.forEach((item) => {
         if (item.status === "exists" && item.existingId) {
           const existing = existingProducts?.find(p => p.id === item.existingId);
@@ -339,14 +355,14 @@ export default function ImportPage() {
       
       toast({
         title: "Sucesso!",
-        description: `Entrada de estoque concluída com sucesso.`,
+        description: `Estoque atualizado e Contas a Pagar registrado (R$ ${totalInvoice.toFixed(2)}).`,
       });
     } catch (error) {
       console.error("Erro na importação:", error);
       toast({
         variant: "destructive",
         title: "Erro na Importação",
-        description: "Não foi possível atualizar o estoque. Tente novamente.",
+        description: "Não foi possível atualizar o estoque ou financeiro. Tente novamente.",
       });
     } finally {
       setIsFinalizing(false);
@@ -479,8 +495,8 @@ export default function ImportPage() {
                   <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
                     <Building2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-bold">Gestão de Fornecedores</p>
-                      <p className="text-xs text-muted-foreground">Novos cadastros automáticos.</p>
+                      <p className="text-sm font-bold">Gestão Financeira</p>
+                      <p className="text-xs text-muted-foreground">Contas a pagar gerado automaticamente.</p>
                     </div>
                   </div>
                 </div>
