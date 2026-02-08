@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/lib/auth-store";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 function ThemeToggle() {
   const [isDark, setIsDark] = useState(true);
@@ -34,13 +35,13 @@ function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className="h-8 w-8 rounded-full text-foreground hover:bg-muted"
+      className="h-8 w-8 rounded-full text-foreground hover:bg-muted transition-all duration-300 ease-in-out hover:rotate-12"
       title={isDark ? "Mudar para modo claro" : "Mudar para modo escuro"}
     >
       {isDark ? (
-        <Sun className="h-4 w-4 text-amber-400" />
+        <Sun className="h-4 w-4 text-amber-400 transition-all" />
       ) : (
-        <Moon className="h-4 w-4 text-foreground" />
+        <Moon className="h-4 w-4 text-foreground transition-all" />
       )}
     </Button>
   );
@@ -53,7 +54,6 @@ function AppSidebar() {
 
   const isAdmin = role === "ADM";
 
-  // Sincroniza a seção aberta com o caminho atual no carregamento inicial
   useEffect(() => {
     if (pathname.startsWith("/finance")) {
       setOpenSection("finance");
@@ -69,9 +69,9 @@ function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border bg-card shadow-xl transition-all duration-300">
+    <Sidebar collapsible="icon" className="border-r border-border bg-card shadow-xl transition-all duration-500 ease-in-out">
       <SidebarHeader className="p-4 flex items-center justify-center">
-        <div className="bg-primary/10 p-2 rounded-xl text-primary shrink-0 transition-transform hover:scale-110">
+        <div className="bg-primary/10 p-2 rounded-xl text-primary shrink-0 transition-all duration-300 hover:scale-110 hover:bg-primary/20">
           <LayoutGrid className="h-6 w-6" />
         </div>
       </SidebarHeader>
@@ -79,9 +79,9 @@ function AppSidebar() {
         <SidebarMenu>
           {/* Painel Principal */}
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === "/dashboard"} tooltip="Painel">
+            <SidebarMenuButton asChild isActive={pathname === "/dashboard"} tooltip="Painel" className="transition-all duration-200">
               <a href="/dashboard">
-                <LayoutDashboard className="h-5 w-5" />
+                <LayoutDashboard className="h-5 w-5 transition-transform group-hover:scale-110" />
                 <span className="font-semibold">Painel</span>
               </a>
             </SidebarMenuButton>
@@ -89,9 +89,9 @@ function AppSidebar() {
 
           {/* PDV */}
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === "/pos"} tooltip="PDV">
+            <SidebarMenuButton asChild isActive={pathname === "/pos"} tooltip="PDV" className="transition-all duration-200">
               <a href="/pos">
-                <ShoppingCart className="h-5 w-5" />
+                <ShoppingCart className="h-5 w-5 transition-transform group-hover:scale-110" />
                 <span className="font-semibold">Frente de Caixa (PDV)</span>
               </a>
             </SidebarMenuButton>
@@ -107,16 +107,16 @@ function AppSidebar() {
             >
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton tooltip="Financeiro" className="w-full">
-                    <Landmark className="h-5 w-5" />
+                  <SidebarMenuButton tooltip="Financeiro" className="w-full transition-all duration-200">
+                    <Landmark className="h-5 w-5 transition-transform group-hover:scale-110" />
                     <span className="font-semibold">Financeiro</span>
-                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-300 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
+                <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down">
+                  <SidebarMenuSub className="transition-all duration-300">
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/finance/payable"}>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/finance/payable"} className="transition-all duration-200">
                         <a href="/finance/payable" className="flex items-center gap-2">
                           <ArrowDownCircle className="h-4 w-4 text-destructive" />
                           Contas a Pagar
@@ -124,7 +124,7 @@ function AppSidebar() {
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/finance/receivable"}>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/finance/receivable"} className="transition-all duration-200">
                         <a href="/finance/receivable" className="flex items-center gap-2">
                           <ArrowUpCircle className="h-4 w-4 text-emerald-500" />
                           Contas a Receber
@@ -132,7 +132,7 @@ function AppSidebar() {
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/finance/transactions"}>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/finance/transactions"} className="transition-all duration-200">
                         <a href="/finance/transactions" className="flex items-center gap-2">
                           <HistoryIcon className="h-4 w-4" />
                           Movimentação
@@ -155,16 +155,16 @@ function AppSidebar() {
             >
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton tooltip="Cadastro" className="w-full">
-                    <ClipboardList className="h-5 w-5" />
+                  <SidebarMenuButton tooltip="Cadastro" className="w-full transition-all duration-200">
+                    <ClipboardList className="h-5 w-5 transition-transform group-hover:scale-110" />
                     <span className="font-semibold">Cadastro</span>
-                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-300 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent>
+                <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down">
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/suppliers"}>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/suppliers"} className="transition-all duration-200">
                         <a href="/suppliers">Fornecedores</a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -184,26 +184,26 @@ function AppSidebar() {
             >
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton tooltip="Estoque" className="w-full">
-                    <Package className="h-5 w-5" />
+                  <SidebarMenuButton tooltip="Estoque" className="w-full transition-all duration-200">
+                    <Package className="h-5 w-5 transition-transform group-hover:scale-110" />
                     <span className="font-semibold">Estoque</span>
-                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-300 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent>
+                <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down">
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/products"}>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/products"} className="transition-all duration-200">
                         <a href="/products">Central de estoque</a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/import"}>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/import"} className="transition-all duration-200">
                         <a href="/import">Importação de Notas</a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild isActive={pathname === "/labels"}>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/labels"} className="transition-all duration-200">
                         <a href="/labels">Emissão de Etiquetas</a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -215,9 +215,9 @@ function AppSidebar() {
 
           {/* Histórico */}
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === "/history"} tooltip="Histórico">
+            <SidebarMenuButton asChild isActive={pathname === "/history"} tooltip="Histórico" className="transition-all duration-200">
               <a href="/history">
-                <History className="h-5 w-5" />
+                <History className="h-5 w-5 transition-transform group-hover:scale-110" />
                 <span className="font-semibold">Histórico de Vendas</span>
               </a>
             </SidebarMenuButton>
@@ -226,9 +226,9 @@ function AppSidebar() {
           {/* Análise */}
           {isAdmin && (
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === "/reports"} tooltip="Análise">
+              <SidebarMenuButton asChild isActive={pathname === "/reports"} tooltip="Análise" className="transition-all duration-200">
                 <a href="/reports">
-                  <PieChart className="h-5 w-5" />
+                  <PieChart className="h-5 w-5 transition-transform group-hover:scale-110" />
                   <span className="font-semibold">Análise de Dados</span>
                 </a>
               </SidebarMenuButton>
@@ -237,7 +237,7 @@ function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-2 border-t border-border mt-auto flex flex-col items-center gap-4">
-        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+        <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 transition-all duration-300 hover:rotate-12 hover:bg-primary/20">
           <User className="h-5 w-5 text-primary" />
         </div>
         <SidebarMenuButton 
@@ -245,7 +245,7 @@ function AppSidebar() {
             logout();
             window.location.href = "/";
           }} 
-          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-xl h-11 flex justify-center w-full transition-colors"
+          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-xl h-11 flex justify-center w-full transition-all duration-300"
           tooltip="Sair"
         >
           <LogOut className="h-5 w-5" />
@@ -259,10 +259,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />
-      <SidebarInset className="bg-background flex flex-col">
-        <header className="flex h-14 items-center px-4 md:px-6 gap-4 sticky top-0 bg-card border-b border-border z-20 shadow-sm">
-          <SidebarTrigger className="text-primary hover:bg-primary/10" />
-          <div className="flex items-center gap-2">
+      <SidebarInset className="bg-background flex flex-col transition-all duration-500 ease-in-out">
+        <header className="flex h-14 items-center px-4 md:px-6 gap-4 sticky top-0 bg-card border-b border-border z-20 shadow-sm transition-all duration-300">
+          <SidebarTrigger className="text-primary hover:bg-primary/10 transition-colors" />
+          <div className="flex items-center gap-2 transition-all duration-300">
             <LayoutGrid className="h-5 w-5 text-primary" />
             <span className="font-headline font-bold text-foreground tracking-tight text-lg hidden sm:inline-block">NexusFlow</span>
           </div>
@@ -270,7 +270,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <ThemeToggle />
         </header>
         <main className="flex-1 p-4 md:p-8 overflow-x-hidden">
-          <div className="max-w-7xl mx-auto w-full animate-in fade-in duration-500">
+          <div className="max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
             {children}
           </div>
         </main>
