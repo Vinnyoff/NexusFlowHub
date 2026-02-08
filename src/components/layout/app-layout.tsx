@@ -165,7 +165,10 @@ function AppSidebar() {
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild isActive={pathname === "/suppliers"} className="transition-all duration-200">
-                        <a href="/suppliers">Fornecedores</a>
+                        <a href="/suppliers" className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4" />
+                          Fornecedores
+                        </a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>
@@ -194,17 +197,26 @@ function AppSidebar() {
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild isActive={pathname === "/products"} className="transition-all duration-200">
-                        <a href="/products">Central de estoque</a>
+                        <a href="/products" className="flex items-center gap-2">
+                          <Box className="h-4 w-4" />
+                          Central de estoque
+                        </a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild isActive={pathname === "/import"} className="transition-all duration-200">
-                        <a href="/import">Importação de Notas</a>
+                        <a href="/import" className="flex items-center gap-2">
+                          <FileUp className="h-4 w-4" />
+                          Importação de Notas
+                        </a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild isActive={pathname === "/labels"} className="transition-all duration-200">
-                        <a href="/labels">Emissão de Etiquetas</a>
+                        <a href="/labels" className="flex items-center gap-2">
+                          <Tag className="h-4 w-4" />
+                          Emissão de Etiquetas
+                        </a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>
