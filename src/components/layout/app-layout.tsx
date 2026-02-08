@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, useSidebar } from "@/components/ui/sidebar";
 import { LayoutGrid, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon, FileUp, Tag, Building2, ChevronRight, ClipboardList, Box, Landmark, ReceiptText, ArrowDownCircle, ArrowUpCircle, History as HistoryIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/lib/auth-store";
@@ -51,18 +51,25 @@ function AppSidebar() {
   const pathname = usePathname();
   const { role, logout } = useAuth();
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const { state } = useSidebar();
 
   const isAdmin = role === "ADM";
 
+  // Gerenciamento inteligente do estado dos subgrupos baseado na expansão da sidebar
   useEffect(() => {
-    if (pathname.startsWith("/finance")) {
-      setOpenSection("finance");
-    } else if (pathname === "/suppliers") {
-      setOpenSection("cadastro");
-    } else if (pathname.startsWith("/products") || pathname === "/import" || pathname === "/labels") {
-      setOpenSection("estoque");
+    if (state === "collapsed") {
+      setOpenSection(null);
+    } else if (state === "expanded") {
+      // Re-avalia qual seção deve estar aberta ao expandir
+      if (pathname.startsWith("/finance")) {
+        setOpenSection("finance");
+      } else if (pathname === "/suppliers") {
+        setOpenSection("cadastro");
+      } else if (pathname.startsWith("/products") || pathname === "/import" || pathname === "/labels") {
+        setOpenSection("estoque");
+      }
     }
-  }, [pathname]);
+  }, [state, pathname]);
 
   const handleOpenChange = (section: string, isOpen: boolean) => {
     setOpenSection(isOpen ? section : null);
