@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
-import { LayoutGrid, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon, FileUp, Tag, Building2, ChevronRight, ClipboardList, Box } from "lucide-react";
+import { LayoutGrid, LayoutDashboard, ShoppingCart, Package, History, PieChart, LogOut, User, Sun, Moon, FileUp, Tag, Building2, ChevronRight, ClipboardList, Box, Landmark, ReceiptText, ArrowDownCircle, ArrowUpCircle, History as HistoryIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/lib/auth-store";
 import { Button } from "@/components/ui/button";
@@ -81,6 +81,49 @@ function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
+          {/* Módulo Financeiro */}
+          {isAdmin && (
+            <Collapsible asChild defaultOpen={pathname.startsWith("/finance")} className="group/collapsible">
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton tooltip="Financeiro" className="w-full">
+                    <Landmark className="h-5 w-5" />
+                    <span className="font-semibold">Financeiro</span>
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/finance/payable"}>
+                        <a href="/finance/payable" className="flex items-center gap-2">
+                          <ArrowDownCircle className="h-4 w-4 text-destructive" />
+                          Contas a Pagar
+                        </a>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/finance/receivable"}>
+                        <a href="/finance/receivable" className="flex items-center gap-2">
+                          <ArrowUpCircle className="h-4 w-4 text-emerald-500" />
+                          Contas a Receber
+                        </a>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild isActive={pathname === "/finance/transactions"}>
+                        <a href="/finance/transactions" className="flex items-center gap-2">
+                          <HistoryIcon className="h-4 w-4" />
+                          Movimentação
+                        </a>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          )}
+
           {/* Módulo de Cadastro com Submódulos */}
           {isAdmin && (
             <Collapsible asChild defaultOpen={pathname === "/suppliers"} className="group/collapsible">
@@ -131,11 +174,6 @@ function AppSidebar() {
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild isActive={pathname === "/labels"}>
                         <a href="/labels">Emissão de Etiquetas</a>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton asChild>
-                        <a href="#" className="opacity-50">Matéria Prima</a>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>

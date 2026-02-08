@@ -31,6 +31,10 @@ service cloud.firestore {
       }
     }
 
+    match /financialTransactions/{transactionId} {
+      allow get, list, create, update, delete: if isAdmin();
+    }
+
     match /roles_admin/{userId} {
       allow get: if isSignedIn();
       allow list: if isAdmin();

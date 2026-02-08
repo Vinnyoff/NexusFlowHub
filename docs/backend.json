@@ -178,67 +178,47 @@
         "saleItems"
       ]
     },
-    "SaleItem": {
+    "FinancialTransaction": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "SaleItem",
+      "title": "FinancialTransaction",
       "type": "object",
-      "description": "Represents an individual item within a sale.",
+      "description": "Represents a financial transaction (payable or receivable).",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the sale item.",
           "format": "uuid"
         },
-        "saleId": {
+        "type": {
           "type": "string",
-          "description": "Reference to Sale."
+          "enum": ["PAYABLE", "RECEIVABLE"]
         },
-        "productId": {
+        "description": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "dueDate": {
           "type": "string",
-          "description": "Reference to Product."
+          "format": "date"
         },
-        "quantity": {
-          "type": "number",
-          "description": "Quantity sold."
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "PAID", "CANCELLED"]
         },
-        "price": {
-          "type": "number",
-          "description": "Price at sale time."
+        "category": {
+          "type": "string"
+        },
+        "paymentDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "entityName": {
+          "type": "string",
+          "description": "Name of the supplier or client involved."
         }
       },
-      "required": [
-        "id",
-        "saleId",
-        "productId",
-        "quantity",
-        "price"
-      ]
-    },
-    "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "User",
-      "type": "object",
-      "description": "Represents a user of the system.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the user.",
-          "format": "uuid"
-        },
-        "username": {
-          "type": "string",
-          "description": "Username of the user."
-        },
-        "role": {
-          "type": "string",
-          "description": "Role (Admin or Cashier)."
-        }
-      },
-      "required": [
-        "id",
-        "username",
-        "role"
-      ]
+      "required": ["id", "type", "description", "amount", "dueDate", "status"]
     }
   },
   "auth": {
@@ -273,6 +253,15 @@
           "entityName": "Sale",
           "schema": {
             "$ref": "#/backend/entities/Sale"
+          }
+        }
+      },
+      {
+        "path": "/financialTransactions/{transactionId}",
+        "definition": {
+          "entityName": "FinancialTransaction",
+          "schema": {
+            "$ref": "#/backend/entities/FinancialTransaction"
           }
         }
       }
