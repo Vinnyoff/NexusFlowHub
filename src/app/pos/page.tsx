@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef } from "react";
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ShoppingCart, Barcode, Trash2, CheckCircle2, CreditCard, Banknote, QrCode, Loader2, Plus, Minus, ScanBarcode, Wallet } from "lucide-react";
+import { ShoppingCart, Barcode, Trash2, CheckCircle2, CreditCard, Banknote, QrCode, Loader2, Plus, Minus, ScanBarcode, Wallet, CalendarClock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
@@ -28,7 +29,7 @@ interface CartItem {
 export default function POSPage() {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<"CARD" | "CASH" | "PIX">("CARD");
+  const [paymentMethod, setPaymentMethod] = useState<"CARD" | "CASH" | "PIX" | "DEFERRED">("CARD");
   const [amountReceived, setAmountReceived] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -140,6 +141,23 @@ export default function POSPage() {
       const batch = writeBatch(firestore);
       batch.set(saleDocRef, saleData);
 
+      // Se for venda a prazo, gerar título no contas a receber
+      if (paymentMethod === "DEFERRED") {
+        const transactionId = crypto.randomUUID();
+        const transactionRef = doc(firestore, "financialTransactions", transactionId);
+        batch.set(transactionRef, {
+          id: transactionId,
+          type: "RECEIVABLE",
+          description: `Venda # ${saleId.substring(0, 8)}`,
+          amount: Number(total.toFixed(2)),
+          dueDate: new Date().toISOString().split('T')[0], // Hoje como previsão inicial
+          status: "PENDING",
+          category: "Venda a Prazo",
+          entityName: "Cliente Balcão",
+          createdAt: new Date().toISOString()
+        });
+      }
+
       // Baixa de estoque e registro de itens individuais
       cart.forEach(item => {
         const saleItemId = crypto.randomUUID();
@@ -166,7 +184,7 @@ export default function POSPage() {
       setAmountReceived("");
       toast({ 
         title: "Venda Finalizada", 
-        description: `Total de R$ ${total.toFixed(2)} registrado e estoque atualizado.` 
+        description: `Total de R$ ${total.toFixed(2)} registrado.${paymentMethod === "DEFERRED" ? " Título gerado no Contas a Receber." : ""}` 
       });
     } catch (error: any) {
       console.error("Erro ao finalizar venda:", error);
@@ -295,35 +313,42 @@ export default function POSPage() {
 
               <div className="space-y-3">
                 <Label className="text-[10px] font-bold uppercase tracking-widest text-white/70 pl-1">Forma de Pagamento</Label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <Button 
                     variant="outline" 
                     onClick={() => setPaymentMethod("CARD")} 
-                    className={`bg-white/10 border-white/20 text-white hover:bg-white/20 flex flex-col h-16 gap-1 p-2 ${paymentMethod === "CARD" ? "bg-white/30 border-white ring-2 ring-white/50" : ""}`}
+                    className={`bg-white/10 border-white/20 text-white hover:bg-white/20 flex flex-col h-14 gap-1 p-2 ${paymentMethod === "CARD" ? "bg-white/30 border-white ring-2 ring-white/50" : ""}`}
                   >
-                    <CreditCard className="h-5 w-5" />
-                    <span className="text-[10px] font-bold">Cartão</span>
+                    <CreditCard className="h-4 w-4" />
+                    <span className="text-[9px] font-bold">Cartão</span>
                   </Button>
                   <Button 
                     variant="outline" 
                     onClick={() => setPaymentMethod("CASH")} 
-                    className={`bg-white/10 border-white/20 text-white hover:bg-white/20 flex flex-col h-16 gap-1 p-2 ${paymentMethod === "CASH" ? "bg-white/30 border-white ring-2 ring-white/50" : ""}`}
+                    className={`bg-white/10 border-white/20 text-white hover:bg-white/20 flex flex-col h-14 gap-1 p-2 ${paymentMethod === "CASH" ? "bg-white/30 border-white ring-2 ring-white/50" : ""}`}
                   >
-                    <Banknote className="h-5 w-5" />
-                    <span className="text-[10px] font-bold">Dinheiro</span>
+                    <Banknote className="h-4 w-4" />
+                    <span className="text-[9px] font-bold">Dinheiro</span>
                   </Button>
                   <Button 
                     variant="outline" 
                     onClick={() => setPaymentMethod("PIX")} 
-                    className={`bg-white/10 border-white/20 text-white hover:bg-white/20 flex flex-col h-16 gap-1 p-2 ${paymentMethod === "PIX" ? "bg-white/30 border-white ring-2 ring-white/50" : ""}`}
+                    className={`bg-white/10 border-white/20 text-white hover:bg-white/20 flex flex-col h-14 gap-1 p-2 ${paymentMethod === "PIX" ? "bg-white/30 border-white ring-2 ring-white/50" : ""}`}
                   >
-                    <QrCode className="h-5 w-5" />
-                    <span className="text-[10px] font-bold">Pix</span>
+                    <QrCode className="h-4 w-4" />
+                    <span className="text-[9px] font-bold">Pix</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setPaymentMethod("DEFERRED")} 
+                    className={`bg-white/10 border-white/20 text-white hover:bg-white/20 flex flex-col h-14 gap-1 p-2 ${paymentMethod === "DEFERRED" ? "bg-white/30 border-white ring-2 ring-white/50" : ""}`}
+                  >
+                    <CalendarClock className="h-4 w-4" />
+                    <span className="text-[9px] font-bold">A Prazo</span>
                   </Button>
                 </div>
               </div>
 
-              {/* Janela Minimalista de Troco */}
               {paymentMethod === "CASH" && (
                 <div className="bg-white/5 backdrop-blur-sm p-4 rounded-2xl border border-white/10 space-y-4 animate-in fade-in slide-in-from-top-2">
                   <div className="flex items-center gap-2 text-white/90">
@@ -364,15 +389,6 @@ export default function POSPage() {
                 FINALIZAR VENDA
               </Button>
             </CardFooter>
-          </Card>
-
-          <Card className="border-none shadow-sm bg-muted/30">
-            <CardContent className="p-4 flex gap-3 items-start">
-              <ScanBarcode className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Mantenha o foco no campo de leitura acima para processar os itens rapidamente. Use <strong>ENTER</strong> para confirmar cada adição.
-              </p>
-            </CardContent>
           </Card>
         </div>
       </div>

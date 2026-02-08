@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, ArrowUpCircle, Loader2, Calendar, CheckCircle, Trash2, Filter, ReceiptText } from "lucide-react";
+import { Plus, Search, ArrowUpCircle, Loader2, Calendar, CheckCircle, Trash2, Filter, ReceiptText, ShoppingBag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, doc } from "firebase/firestore";
@@ -88,7 +88,7 @@ export default function AccountsReceivable() {
             <h1 className="text-3xl font-headline font-bold text-emerald-500 flex items-center gap-2">
               <ArrowUpCircle className="h-8 w-8" /> Contas a Receber
             </h1>
-            <p className="text-muted-foreground">Controle de entradas, faturas e clientes.</p>
+            <p className="text-muted-foreground">Controle de entradas, faturas e vendas a prazo.</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -188,7 +188,16 @@ export default function AccountsReceivable() {
                 <TableBody>
                   {filtered.map((t) => (
                     <TableRow key={t.id}>
-                      <TableCell className="font-medium">{t.description}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex flex-col">
+                          <span>{t.description}</span>
+                          {t.description.includes("Venda #") && (
+                            <div className="flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase mt-0.5">
+                              <ShoppingBag className="h-2 w-2" /> Venda Automática
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{t.entityName || "---"}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5 text-xs">

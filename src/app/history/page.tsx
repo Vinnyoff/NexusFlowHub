@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -6,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar as CalendarIcon, Filter, Eye, Download, Loader2, Package, Trash2, AlertTriangle, CalendarDays, ChevronDown, ChevronUp, PlusCircle, CreditCard, Banknote, QrCode, ListFilter } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Filter, Eye, Download, Loader2, Package, Trash2, AlertTriangle, CalendarDays, ChevronDown, ChevronUp, PlusCircle, CreditCard, Banknote, QrCode, ListFilter, CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, where, writeBatch, doc } from "firebase/firestore";
@@ -179,6 +180,7 @@ export default function SalesHistory() {
                 <SelectItem value="CARD">Cartão</SelectItem>
                 <SelectItem value="CASH">Dinheiro</SelectItem>
                 <SelectItem value="PIX">Pix</SelectItem>
+                <SelectItem value="DEFERRED">A Prazo</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -278,7 +280,9 @@ export default function SalesHistory() {
                           <Badge variant="outline" className="font-bold text-[10px] uppercase bg-white border-border shadow-sm px-3 h-6 flex items-center gap-1.5">
                             {sale.paymentMethod === 'CARD' ? <><CreditCard className="h-3 w-3" /> Cartão</> : 
                              sale.paymentMethod === 'CASH' ? <><Banknote className="h-3 w-3" /> Dinheiro</> : 
-                             sale.paymentMethod === 'PIX' ? <><QrCode className="h-3 w-3" /> Pix</> : sale.paymentMethod || '---'}
+                             sale.paymentMethod === 'PIX' ? <><QrCode className="h-3 w-3" /> Pix</> : 
+                             sale.paymentMethod === 'DEFERRED' ? <><CalendarClock className="h-3 w-3" /> A Prazo</> : 
+                             sale.paymentMethod || '---'}
                           </Badge>
                         </TableCell>
                         <TableCell className="font-black text-primary text-lg">
