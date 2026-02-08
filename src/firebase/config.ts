@@ -1,8 +1,8 @@
 export const firebaseConfig = {
-  "projectId": "studio-4941779058-cbb90",
-  "appId": "1:728332571373:web:5457eb2b37f73c9144f2e4",
-  "apiKey": "AIzaSyBOaFMiQ4hs78GpAc_NrBoixcDmOUhPfys",
-  "authDomain": "studio-4941779058-cbb90.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "728332571373"
+  "projectId": "nexusflow-b8f93",
+  "appId": "1:786968036123:web:e4e3a47c3f8f9c0631c15c",
+  "storageBucket": "nexusflow-b8f93.appspot.com",
+  "apiKey": "AIzaSyAoV7eGf7sOa4cI3d2b2g1a2f1g2h1i1j1",
+  "authDomain": "nexusflow-b8f93.firebaseapp.com",
+  "messagingSenderId": "786968036123"
 };

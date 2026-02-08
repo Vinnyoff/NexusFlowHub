@@ -1,4 +1,3 @@
-
 // Este arquivo é mantido apenas para compatibilidade, mas a inicialização correta
 // ocorre em src/firebase/index.ts. Redirecionamos para usar a config oficial.
 
